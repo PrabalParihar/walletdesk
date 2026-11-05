@@ -1,11 +1,16 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: LicenseRef-Degensoft-SwapVM-1.1
 pragma solidity 0.8.30;
+
+/// @custom:license-url https://github.com/1inch/swap-vm/blob/main/LICENSES/SwapVM-1.1.txt
+/// @custom:attribution Powered by SwapVM — © Degensoft Ltd 2025
+/// @custom:change 2026-11-05 WalletDesk: program encoding for the DeskBand instruction. Price is token1 per token0 (see DeskBandMath).
 
 /// @title DeskBandProgram
 /// @notice SwapVM bytecode for the WalletDesk opcode.
 /// @dev Layout matches the SwapVM run loop: `[opcode:1][argsLen:1][args]`.
-///      Opcode 10 is DeskBand on WalletDeskRouter. Arguments are packed, not ABI-encoded:
+///      Opcode 0 is DeskBand on WalletDeskRouter. Arguments are packed, not ABI-encoded:
 ///      priceLowX18 (32) | priceHighX18 (32) | feeBps (2) | start (4) | halfLife (4).
+///      Prices are raw token1 per 1 raw token0, scaled by 1e18 (Uniswap v4 price unit).
 library DeskBandProgram {
     /// @dev WalletDeskRouter registers DeskBand at index 0. The stock router reserves 0-9;
     ///      this modified router does not.

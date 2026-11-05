@@ -1,5 +1,9 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: LicenseRef-Degensoft-SwapVM-1.1
 pragma solidity 0.8.30;
+
+/// @custom:license-url https://github.com/1inch/swap-vm/blob/main/LICENSES/SwapVM-1.1.txt
+/// @custom:attribution Powered by SwapVM — © Degensoft Ltd 2025
+/// @custom:change 2026-11-05 WalletDesk: packs DeskBand Aqua orders with the SwapVM MakerTraits/TakerTraits encoders.
 
 import {ISwapVM} from "@1inch/swap-vm/src/interfaces/ISwapVM.sol";
 import {MakerTraits, MakerTraitsLib} from "@1inch/swap-vm/src/libs/MakerTraits.sol";

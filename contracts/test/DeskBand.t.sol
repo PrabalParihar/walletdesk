@@ -60,11 +60,81 @@ contract DeskBandTest is Test {
 
     function test_math() public view {
         DeskBandMath.Quote memory q = DeskBandMath.quoteExactIn(
-            SHIP, SHIP, 4 ether, 0.99 ether, 1.01 ether, 30, uint32(block.timestamp), 0, block.timestamp
+            SHIP, SHIP, 4 ether, true, 0.99 ether, 1.01 ether, 30, uint32(block.timestamp), 0, block.timestamp
         );
         assertEq(q.priceX18, 1 ether);
         assertEq(q.feeOut, 0.012 ether);
         assertEq(q.amountOut, 3.988 ether);
+    }
+
+    /// @notice WETH (18 decimals) as token0, USDC (6 decimals) as token1, band 2990 to 3010 USDC per WETH.
+    ///         Price unit is raw token1 per raw token0 * 1e18, so 3000 USDC/WETH is 3000e6.
+    ///         Before the fix the same band priced both directions with `amountIn * price`, which paid
+    ///         9 wei of WETH for 3000 USDC. Both directions must now clear near 3000.
+    function test_bothDirectionsWithMixedDecimals() public view {
+        uint256 low = 2990e6;
+        uint256 high = 3010e6;
+        uint256 shelfWeth = 10 ether;
+        uint256 shelfUsdc = 30_000e6;
+
+        // Sell 1 WETH (token0 -> token1).
+        DeskBandMath.Quote memory sellWeth = DeskBandMath.quoteExactIn(
+            shelfWeth, shelfUsdc, 1 ether, true, low, high, 0, uint32(block.timestamp), 0, block.timestamp
+        );
+        assertEq(sellWeth.priceX18, 3000e6, "balanced shelf quotes the band mid");
+        assertEq(sellWeth.amountOut, 3000e6, "1 WETH -> 3000 USDC");
+
+        // Sell 3000 USDC (token1 -> token0). balanceIn is USDC, balanceOut is WETH.
+        DeskBandMath.Quote memory sellUsdc = DeskBandMath.quoteExactIn(
+            shelfUsdc, shelfWeth, 3000e6, false, low, high, 0, uint32(block.timestamp), 0, block.timestamp
+        );
+        assertEq(sellUsdc.amountOut, 1 ether, "3000 USDC -> 1 WETH");
+    }
+
+    /// @notice Inventory weight is by value, not raw units. A shelf with 1,000,000 USDC and 0.01 WETH is
+    ///         almost all USDC by value, so selling USDC for WETH must quote near the band's high price
+    ///         (least WETH per USDC). Raw-unit weighting pinned it to the wrong edge.
+    function test_weightIsByValueNotRawUnits() public view {
+        uint256 price = DeskBandMath.bandPrice(0.01 ether, 1_000_000e6, 2990e6, 3010e6);
+        assertGt(price, 3009e6, "token1-heavy shelf sits near priceHigh");
+        uint256 priceWethHeavy = DeskBandMath.bandPrice(1_000 ether, 1e6, 2990e6, 3010e6);
+        assertLt(priceWethHeavy, 2991e6, "token0-heavy shelf sits near priceLow");
+    }
+
+    /// @notice As a side drains the quote gets worse for the taker, in both directions.
+    function test_quoteWorsensAsShelfDrains() public view {
+        DeskBandMath.Quote memory full = DeskBandMath.quoteExactIn(
+            SHIP, SHIP, 1 ether, true, 0.9 ether, 1.1 ether, 0, 0, 0, block.timestamp
+        );
+        DeskBandMath.Quote memory drained = DeskBandMath.quoteExactIn(
+            SHIP, 100 ether, 1 ether, true, 0.9 ether, 1.1 ether, 0, 0, 0, block.timestamp
+        );
+        assertLt(drained.amountOut, full.amountOut, "less token1 left: less token1 per token0");
+
+        DeskBandMath.Quote memory fullRev = DeskBandMath.quoteExactIn(
+            SHIP, SHIP, 1 ether, false, 0.9 ether, 1.1 ether, 0, 0, 0, block.timestamp
+        );
+        DeskBandMath.Quote memory drainedRev = DeskBandMath.quoteExactIn(
+            SHIP, 100 ether, 1 ether, false, 0.9 ether, 1.1 ether, 0, 0, 0, block.timestamp
+        );
+        assertLt(drainedRev.amountOut, fullRev.amountOut, "less token0 left: less token0 per token1");
+    }
+
+    function test_reverseDirectionQuoteMatchesSwap() public {
+        (ISwapVM.Order memory order, bytes memory strategy) = _order(30, uint32(block.timestamp), 0);
+        vm.prank(maker);
+        aqua.ship(address(router), strategy, _tokens(), _amounts());
+        token1.mint(taker, 10 ether);
+        vm.prank(taker);
+        token1.approve(address(router), type(uint256).max);
+        bytes memory takerData = builder.standardTakerData();
+        (, uint256 quotedOut,) = router.quote(order, address(token1), address(token0), 4 ether, takerData);
+        (uint256 previewOut,) = router.preview(order, address(token1), address(token0), 4 ether);
+        assertEq(quotedOut, previewOut, "preview and VM agree in the token1 -> token0 direction");
+        assertEq(previewOut, 3.988 ether);
+        vm.prank(taker);
+        (, uint256 gotOut,) = router.swap(order, address(token1), address(token0), 4 ether, takerData);
+        assertEq(gotOut, quotedOut);
     }
 
     function test_shipDoesNotMoveWallet_quoteMatchesSwap() public {

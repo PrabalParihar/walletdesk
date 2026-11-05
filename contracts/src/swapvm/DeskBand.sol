@@ -1,5 +1,9 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: LicenseRef-Degensoft-SwapVM-1.1
 pragma solidity 0.8.30;
+
+/// @custom:license-url https://github.com/1inch/swap-vm/blob/main/LICENSES/SwapVM-1.1.txt
+/// @custom:attribution Powered by SwapVM — © Degensoft Ltd 2025
+/// @custom:change 2026-11-05 WalletDesk: new SwapVM instruction (DeskBand). 2026-11-06: direction-aware pricing.
 
 import {Context} from "@1inch/swap-vm/src/libs/VM.sol";
 
@@ -13,7 +17,7 @@ contract DeskBand {
     error DeskBandExactInOnly();
 
     /// @notice Price `ctx.swap.amountIn` against Aqua balances already loaded into the registers.
-    /// @dev Not marked `view`: SwapVM's opcode table is a non-view internal function pointer.
+    /// @dev token0 is the lower address, as in Uniswap. `tokenIn < tokenOut` means zeroForOne.
     function _deskBandXD(Context memory ctx, bytes calldata args) internal {
         if (!ctx.query.isExactIn) revert DeskBandExactInOnly();
         DeskBandProgram.Params memory p = DeskBandProgram.decodeArgs(args);
@@ -21,6 +25,7 @@ contract DeskBand {
             ctx.swap.balanceIn,
             ctx.swap.balanceOut,
             ctx.swap.amountIn,
+            ctx.query.tokenIn < ctx.query.tokenOut,
             p.priceLowX18,
             p.priceHighX18,
             p.feeBps,

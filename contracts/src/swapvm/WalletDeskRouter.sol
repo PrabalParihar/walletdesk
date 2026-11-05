@@ -1,5 +1,9 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: LicenseRef-Degensoft-SwapVM-1.1
 pragma solidity 0.8.30;
+
+/// @custom:license-url https://github.com/1inch/swap-vm/blob/main/LICENSES/SwapVM-1.1.txt
+/// @custom:attribution Powered by SwapVM — © Degensoft Ltd 2025
+/// @custom:change 2026-11-05 WalletDesk: SwapVM v1.0.2 redeployed with `_instructions()` replaced by DeskBand. 2026-11-06: direction-aware preview.
 
 import {SwapVM} from "@1inch/swap-vm/src/SwapVM.sol";
 import {ISwapVM} from "@1inch/swap-vm/src/interfaces/ISwapVM.sol";
@@ -25,6 +29,7 @@ contract WalletDeskRouter is SwapVM, DeskBand {
 
     /// @notice Same amounts `swap` will produce for an Aqua order, plus the fee kept on the shelf.
     /// @dev Does not run the VM. It calls the same `DeskBandMath` the opcode calls, so quote and swap match.
+    ///      Reverts with the DeskBandMath errors when the shelf cannot fill; OverflowHook treats that as a skip.
     function preview(ISwapVM.Order calldata order, address tokenIn, address tokenOut, uint256 amountIn)
         external
         view
@@ -39,6 +44,7 @@ contract WalletDeskRouter is SwapVM, DeskBand {
             balanceIn,
             balanceOut,
             amountIn,
+            tokenIn < tokenOut,
             p.priceLowX18,
             p.priceHighX18,
             p.feeBps,
