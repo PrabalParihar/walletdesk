@@ -19,8 +19,11 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 /// - `balanceOf` truncates sub-micro amounts. Do not credit from a native balance; credit the 6-decimal amount
 ///   the attestor measured.
 ///
-/// Cross-chain note: Aqua is not deployed on Arc. A fill is proven on Unichain (or a fork). An attestor then
-/// calls `creditFromFill` here. CCTP is intentionally not in this contract.
+/// Cross-chain note: Aqua is not deployed on Arc (https://business.1inch.com/portal/documentation/aqua/liquidity-layer/supported-chains).
+/// USDC can still move Unichain to Arc with Circle CCTP V2. `CctpFeeBridge` burns it on Unichain.
+/// After `MessageTransmitterV2.receiveMessage` mints to this treasury, `creditFromFill` assigns the
+/// minted balance to the maker from the burn's hook data. A local anvil fork cannot get an Iris
+/// attestation, so the fork demo calls `creditFromFill` directly. See docs/CCTP.md.
 contract FeeShareTreasury {
     using SafeERC20 for IERC20;
 

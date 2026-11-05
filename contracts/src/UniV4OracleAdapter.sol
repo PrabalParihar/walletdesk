@@ -29,8 +29,9 @@ struct OracleRegisters {
 /// @title UniV4OracleAdapter
 /// @notice Non-upgradeable Extruction target. Spot-prices a swap from the v4 pool's sqrtPriceX96.
 /// @dev `extruction` does not write storage, so a static `quote` and a state-changing `swap` that
-///      both call it return the same amounts. WalletDesk's default program is DeskBand, not this adapter.
-///      The adapter is the Path C peg if a maker later composes Extruction on a router that has that opcode.
+///      both call it return the same amounts. It is not part of the default DeskBand program.
+///      See docs/ORACLE.md. The adapter overwrites `amountOut` with the pool spot and would ignore
+///      the maker's band, decay, and fee. WalletDeskRouter does not register an Extruction opcode.
 contract UniV4OracleAdapter {
     using PoolIdLibrary for PoolKey;
     using StateLibrary for IPoolManager;

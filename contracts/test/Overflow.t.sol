@@ -332,6 +332,35 @@ abstract contract OverflowFixture is Test {
         assertEq(quoted.amountOut, swapped.amountOut);
         assertEq(quoted.amountOut, 1 ether);
     }
+
+    /// @dev The pool spot is 1.0 at tick 0, so 4 tokens in quote 4 tokens out.
+    ///      DeskBand on equal shelves inside 0.99 to 1.01 at 30 bps quotes 3.988.
+    ///      Replacing the program with this adapter would drop the maker's fee and band.
+    function test_poolSpotDoesNotReplaceDeskQuote() public {
+        _ship();
+        (uint256 deskOut,) = swapVm.preview(order, address(token0), address(token1), 4 ether);
+        assertEq(deskOut, 3.988 ether);
+
+        UniV4OracleAdapter oracle = new UniV4OracleAdapter(manager, key);
+        OracleQuery memory query = OracleQuery({
+            orderHash: bytes32(0),
+            maker: maker,
+            taker: taker,
+            tokenIn: address(token0),
+            tokenOut: address(token1),
+            isExactIn: true
+        });
+        OracleRegisters memory reg = OracleRegisters({
+            balanceIn: 0,
+            balanceOut: 0,
+            amountIn: 4 ether,
+            amountOut: 0,
+            amountNetPulled: 0
+        });
+        (,, OracleRegisters memory spot) = oracle.extruction(true, 0, query, reg, "", "");
+        assertEq(spot.amountOut, 4 ether);
+        assertTrue(spot.amountOut != deskOut);
+    }
 }
 
 contract OverflowLocalTest is OverflowFixture {

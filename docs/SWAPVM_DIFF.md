@@ -28,4 +28,4 @@ Program layout, consumed by `DeskBandProgram.encode`:
 
 `preview` does not walk the VM. It calls the same `DeskBandMath.quoteExactIn` the opcode calls, then `quote` and `swap` are checked against that result in `DeskBand.t.sol`.
 
-`UniV4OracleAdapter` is a separate non-upgradeable Extruction target. It is not in the default program. Its `extruction` body is view, so a static call and a normal call return the same amounts.
+`UniV4OracleAdapter` is a separate non-upgradeable Extruction target. It is not in the default program. `docs/ORACLE.md` explains why a pool spot would ignore the band, the decay, and the fee. Its `extruction` body is view, so a static call and a normal call return the same amounts.
