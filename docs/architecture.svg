@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="560" viewBox="0 0 1100 560">
+  <rect width="1100" height="560" fill="#ffffff"/>
+  <text x="40" y="42" font-family="Inter, Arial, sans-serif" font-size="22" font-weight="600" fill="#18181B">WalletDesk</text>
+  <text x="40" y="68" font-family="Inter, Arial, sans-serif" font-size="13" fill="#5D5D66">Idle wallet inventory becomes a Uniswap market. Fees settle as USDC on Arc.</text>
+
+  <rect x="32" y="96" width="700" height="420" rx="10" fill="#F2F2F3"/>
+  <text x="48" y="124" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="600" fill="#18181B">Unichain or fork</text>
+
+  <g font-family="Inter, Arial, sans-serif" font-size="13" fill="#18181B">
+    <rect x="56" y="156" width="150" height="56" rx="10" fill="#ffffff" stroke="#0066FA"/>
+    <text x="78" y="188">Maker wallet</text>
+
+    <rect x="280" y="156" width="170" height="56" rx="10" fill="#ffffff" stroke="rgba(0,0,0,0.12)"/>
+    <text x="310" y="180">Aqua registry</text>
+    <text x="300" y="198" font-size="11" fill="#5D5D66">ship, pull, push</text>
+
+    <rect x="520" y="156" width="180" height="56" rx="10" fill="#ffffff" stroke="rgba(0,0,0,0.12)"/>
+    <text x="548" y="180">WalletDeskRouter</text>
+    <text x="548" y="198" font-size="11" fill="#5D5D66">DeskBand opcode</text>
+
+    <rect x="160" y="300" width="170" height="56" rx="10" fill="#ffffff" stroke="#0066FA"/>
+    <text x="196" y="324">OverflowHook</text>
+    <text x="188" y="342" font-size="11" fill="#5D5D66">beforeSwap delta</text>
+
+    <rect x="400" y="300" width="200" height="56" rx="10" fill="#ffffff" stroke="rgba(0,0,0,0.12)"/>
+    <text x="430" y="324">v4 PoolManager</text>
+    <text x="436" y="342" font-size="11" fill="#5D5D66">pool fills the cap</text>
+
+    <rect x="250" y="420" width="220" height="56" rx="10" fill="#0066FA"/>
+    <text x="270" y="452" fill="#ffffff">Taker / OverflowRouter</text>
+  </g>
+
+  <rect x="756" y="96" width="312" height="420" rx="10" fill="#ffffff" stroke="rgba(0,0,0,0.08)"/>
+  <text x="776" y="124" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="600" fill="#18181B">Arc testnet</text>
+  <rect x="784" y="180" width="256" height="72" rx="10" fill="#F2F2F3"/>
+  <text x="804" y="210" font-family="Inter, Arial, sans-serif" font-size="13" fill="#18181B">FeeShareTreasury</text>
+  <text x="804" y="230" font-family="Inter, Arial, sans-serif" font-size="11" fill="#5D5D66">USDC ERC-20, 6 decimals</text>
+  <rect x="784" y="300" width="256" height="64" rx="10" fill="#ffffff" stroke="rgba(0,0,0,0.12)"/>
+  <text x="804" y="336" font-family="Inter, Arial, sans-serif" font-size="13" fill="#18181B">Attestor credits a fill id</text>
+  <text x="776" y="460" font-family="Inter, Arial, sans-serif" font-size="12" fill="#5D5D66">Aqua is not deployed on Arc.</text>
+</svg>
