@@ -92,6 +92,7 @@ print("hook", deployment["hook"])
 print("maker", deployment["maker"])
 print("taker", deployment["taker"])
 print("treasury", deployment["treasury"])
+print("price feed", deployment["priceFeed"])
 print("pool", deployment["poolId"])
 out = subprocess.check_output([
     "cast", "call", deployment["hook"],
@@ -127,7 +128,8 @@ echo
 echo "WalletDesk demo is up."
 echo "  UI      http://127.0.0.1:43127"
 echo "  Live    http://127.0.0.1:43127/live"
-echo "  Keeper  http://127.0.0.1:8787/health"
+echo "  Keeper  http://127.0.0.1:8787/health   (also /fills, /skips, /reference)"
+echo "  The keeper posts a live USDT/USD reference to DeskPriceFeed every 30s, standing in for the CRE workflow."
 echo "  Maker   $(cast wallet address --private-key "$MAKER_KEY")"
 echo "  Taker   $(cast wallet address --private-key "$TAKER_KEY")"
 echo "Import an Anvil account from ${LOG} if you want the buttons to send transactions."

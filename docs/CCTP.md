@@ -1,4 +1,9 @@
-# USDC settlement, Unichain to Arc
+# USDC rebates, Unichain to Arc
+
+What this is: the maker's spread on each fill already stays in the maker wallet as the output token. USDC here is a
+separate, protocol-funded rebate program: the treasury owner deposits USDC, an attestor credits a rebate per fill
+id, and makers claim it. CCTP V2 is how that USDC can move from Unichain to Arc. It is not the maker's trading fee
+being moved.
 
 Circle CCTP V2 lists both Unichain and Arc, and it lists their testnets when the mainnet is listed.
 
@@ -39,7 +44,8 @@ Do not put a key in the repo. From a shell that already has your keys:
 ```bash
 cd contracts
 # Unichain Sepolia. Prints the bridge address. Add --broadcast yourself.
-forge script script/DeployUnichainSepolia.s.sol --rpc-url "$UNICHAIN_SEPOLIA_RPC" --slow
+# The bridge has its own script: Aqua is not deployed on Unichain Sepolia, and the bridge does not need it.
+forge script script/DeployCctpBridge.s.sol --rpc-url "$UNICHAIN_SEPOLIA_RPC" --slow
 
 # Arc testnet. Gas price must be at least 20 gwei or the mempool drops the transaction.
 forge script script/DeployArcTreasury.s.sol \
