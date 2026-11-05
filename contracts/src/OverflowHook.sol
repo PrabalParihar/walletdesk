@@ -76,10 +76,14 @@ contract OverflowHook is BaseHook {
     mapping(PoolId => Fill) public lastFill;
     mapping(address maker => mapping(address token => uint256 amount)) public accruedFees;
 
+    /// @dev Arachnid's deterministic deployer. A hook mined for that factory has `msg.sender` equal to the
+    ///      factory, so the broadcasting EOA (`tx.origin`) is the owner. Direct deploys keep `msg.sender`.
+    address private constant _CREATE2_FACTORY = 0x4e59b44847b379578588920cA78FbF26c0B4956C;
+
     constructor(IPoolManager manager, address aquaRouter, bytes32 defaultStrategyHash_) BaseHook(manager) {
         swapVm = IDeskSwapVM(aquaRouter);
         defaultStrategyHash = defaultStrategyHash_;
-        owner = msg.sender;
+        owner = msg.sender == _CREATE2_FACTORY ? tx.origin : msg.sender;
     }
 
     function setOverflowRouter(address router) external {

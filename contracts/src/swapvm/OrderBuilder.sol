@@ -17,6 +17,18 @@ contract OrderBuilder {
         pure
         returns (uint256 traits, bytes memory data, bytes memory strategy)
     {
+        return buildBand(maker, 0.99 ether, 1.01 ether, feeBps, start, halfLife);
+    }
+
+    /// @notice Same packing as `build`, with the maker's price band instead of the 0.99 to 1.01 demo band.
+    function buildBand(
+        address maker,
+        uint256 priceLowX18,
+        uint256 priceHighX18,
+        uint16 feeBps,
+        uint32 start,
+        uint32 halfLife
+    ) public pure returns (uint256 traits, bytes memory data, bytes memory strategy) {
         ISwapVM.Order memory order = MakerTraitsLib.build(
             MakerTraitsLib.Args({
                 maker: maker,
@@ -38,8 +50,8 @@ contract OrderBuilder {
                 postTransferOutData: "",
                 program: DeskBandProgram.encode(
                     DeskBandProgram.Params({
-                        priceLowX18: 0.99 ether,
-                        priceHighX18: 1.01 ether,
+                        priceLowX18: priceLowX18,
+                        priceHighX18: priceHighX18,
                         feeBps: feeBps,
                         start: start,
                         halfLife: halfLife

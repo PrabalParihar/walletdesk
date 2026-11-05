@@ -50,6 +50,14 @@ contract DeskBandTest is Test {
         assertEq(router.instructionCount(), 1);
     }
 
+    function test_buildBandUsesTheCallerPrices() public view {
+        (uint256 traits, bytes memory data, bytes memory strategy) =
+            builder.buildBand(maker, 0.5 ether, 1.5 ether, 30, uint32(block.timestamp), 0);
+        (uint256 sameTraits,, bytes memory sameStrategy) = builder.build(maker, 30, uint32(block.timestamp), 0);
+        assertTrue(traits != 0 && data.length > 0);
+        assertTrue(keccak256(strategy) != keccak256(sameStrategy));
+    }
+
     function test_math() public view {
         DeskBandMath.Quote memory q = DeskBandMath.quoteExactIn(
             SHIP, SHIP, 4 ether, 0.99 ether, 1.01 ether, 30, uint32(block.timestamp), 0, block.timestamp

@@ -1,12 +1,15 @@
 contracts/out/
 contracts/cache/
 contracts/broadcast/
+contracts/deployments/*.json
+apps/web/public/deployments.json
 **/.env
 **/.env.*
 !**/.env.example
 node_modules/
 apps/web/.next/
 apps/web/out/
+apps/web/AGENTS.md
 uploads/
 agent-tools/
 .DS_Store

@@ -1,0 +1,12 @@
+{
+  "name": "walletdesk-keeper",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node index.mjs",
+    "test": "node --test scale.test.mjs"
+  },
+  "dependencies": {
+    "viem": "^2.57.16"
+  }
+}
