@@ -5,11 +5,13 @@ import {
   createPublicClient,
   createWalletClient,
   decodeEventLog,
+  encodeAbiParameters,
   http,
   parseAbi,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 
+import { fetchReference, toPriceX18 } from "./reference.mjs";
 import { feeToUsdc6, isLoopbackRpc } from "./scale.mjs";
 
 const deploymentPath = process.env.DEPLOYMENTS_PATH;
@@ -33,6 +35,13 @@ const hookAbi = parseAbi([
   "event OverflowRouted(bytes32 indexed poolId, address indexed maker, uint256 residualIn, uint256 filledOut)",
   "event FeeAccrued(bytes32 indexed fillId, address indexed maker, address token, uint256 feeAmount)",
   "function lastFill(bytes32 poolId) view returns (address maker, address tokenIn, address tokenOut, uint256 residualIn, uint256 filledOut, uint256 feeOut, bytes32 fillId)",
+  "event DeskSkipped(bytes32 indexed poolId, address indexed maker, uint8 reason)",
+]);
+
+const feedAbi = parseAbi([
+  "function onReport(bytes metadata, bytes report)",
+  "function referenceOf(bytes32 poolId) view returns (uint256 priceX18, uint64 updatedAt)",
+  "function forwarder() view returns (address)",
 ]);
 
 const aquaAbi = parseAbi([
@@ -54,8 +63,10 @@ const erc20Abi = parseAbi([
 ]);
 
 const fills = new Map();
+const skips = new Map();
 let lastError = null;
 let scanning = false;
+const reference = { price: null, priceX18: null, sources: [], pushedAt: null, txHash: null, note: "not started" };
 
 function json(res, status, body) {
   const payload = JSON.stringify(body, (_key, value) => (typeof value === "bigint" ? value.toString() : value));
@@ -156,6 +167,22 @@ async function scan() {
       fromBlock,
       toBlock: latest,
     });
+    const skipLogs = await publicClient.getLogs({
+      address: deployment.hook,
+      event: hookAbi[3],
+      fromBlock,
+      toBlock: latest,
+    });
+    for (const log of skipLogs) {
+      const key = `${log.transactionHash}:${log.logIndex}`;
+      if (skips.has(key)) continue;
+      skips.set(key, {
+        txHash: log.transactionHash,
+        maker: log.args.maker,
+        reason: Number(log.args.reason),
+        blockNumber: Number(log.blockNumber),
+      });
+    }
     for (const log of feeLogs) {
       const id = log.args.fillId;
       if (!id || fills.has(id)) continue;
@@ -226,13 +253,22 @@ const server = createServer((req, res) => {
       ok: lastError === null,
       fills: fills.size,
       settlement: deployment.settlement || "attestor",
+      reference: reference.note,
       rpc: isLoopbackRpc(rpcUrl) ? "loopback" : "remote",
       error: lastError,
     });
     return;
   }
   if (url.pathname === "/fills") {
-    json(res, 200, { fills: [...fills.values()] });
+    json(res, 200, { fills: [...fills.values()].sort((a, b) => b.blockNumber - a.blockNumber) });
+    return;
+  }
+  if (url.pathname === "/skips") {
+    json(res, 200, { skips: [...skips.values()].sort((a, b) => b.blockNumber - a.blockNumber) });
+    return;
+  }
+  if (url.pathname === "/reference") {
+    json(res, 200, reference);
     return;
   }
   if (url.pathname === "/desk") {
@@ -254,5 +290,64 @@ server.listen(port, "0.0.0.0", () => {
   console.log(`keeper listening on ${port}`);
 });
 
+/**
+ * Local stand-in for the Chainlink CRE workflow (services/cre/desk-guard). Only on a loopback RPC, and only when
+ * the keeper key is the feed's forwarder (DemoSeed sets that). On a real chain the CRE forwarder writes reports.
+ */
+async function pushReference() {
+  const key = process.env.KEEPER_PRIVATE_KEY;
+  if (!key || !deployment.priceFeed || !isLoopbackRpc(rpcUrl) || process.env.REFERENCE_PUSH === "0") {
+    reference.note = "off (needs loopback RPC, KEEPER_PRIVATE_KEY and priceFeed)";
+    return;
+  }
+  try {
+    const account = privateKeyToAccount(key);
+    const forwarder = await publicClient.readContract({ address: deployment.priceFeed, abi: feedAbi, functionName: "forwarder" });
+    if (forwarder.toLowerCase() !== account.address.toLowerCase()) {
+      reference.note = "off (keeper is not the feed forwarder; the CRE workflow owns this feed)";
+      return;
+    }
+    const { price, sources } = await fetchReference();
+    if (price === null) {
+      reference.note = "no usable quote from the public APIs; the hook fails closed when the reference ages out";
+      return;
+    }
+    const block = await publicClient.getBlock();
+    const [, updatedAt] = await publicClient.readContract({
+      address: deployment.priceFeed,
+      abi: feedAbi,
+      functionName: "referenceOf",
+      args: [deployment.poolId],
+    });
+    const observedAt = block.timestamp > updatedAt ? block.timestamp : updatedAt + 1n;
+    const priceX18 = toPriceX18(price, deployment.decimals0 ?? 18, deployment.decimals1 ?? 18);
+    const report = encodeAbiParameters(
+      [{ type: "bytes32" }, { type: "uint256" }, { type: "uint64" }],
+      [deployment.poolId, priceX18, observedAt],
+    );
+    const wallet = createWalletClient({ account, transport: http(rpcUrl) });
+    const hash = await wallet.writeContract({
+      address: deployment.priceFeed,
+      abi: feedAbi,
+      functionName: "onReport",
+      args: ["0x", report],
+      chain: null,
+    });
+    await publicClient.waitForTransactionReceipt({ hash });
+    Object.assign(reference, {
+      price,
+      priceX18: priceX18.toString(),
+      sources,
+      pushedAt: Number(observedAt),
+      txHash: hash,
+      note: `local CRE stand-in, median of ${sources.join(" + ")}`,
+    });
+  } catch (error) {
+    reference.note = `push failed: ${error instanceof Error ? error.message.slice(0, 200) : String(error)}`;
+  }
+}
+
 await scan();
+await pushReference();
 setInterval(scan, 4000);
+setInterval(pushReference, Number(process.env.REFERENCE_INTERVAL_MS || 30000));
