@@ -1,0 +1,12 @@
+contracts/out/
+contracts/cache/
+contracts/broadcast/
+**/.env
+**/.env.*
+!**/.env.example
+node_modules/
+apps/web/.next/
+apps/web/out/
+uploads/
+agent-tools/
+.DS_Store
