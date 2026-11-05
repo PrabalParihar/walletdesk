@@ -1,5 +1,12 @@
 import { defineChain } from "viem";
-import { unichain, unichainSepolia } from "viem/chains";
+import { unichainSepolia } from "viem/chains";
+
+export const unichainFork = defineChain({
+  id: 130,
+  name: "Unichain fork",
+  nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+  rpcUrls: { default: { http: [process.env.NEXT_PUBLIC_RPC_URL || "http://127.0.0.1:8545"] } },
+});
 
 export const arcTestnet = defineChain({
   id: 5_042_002,
@@ -9,7 +16,8 @@ export const arcTestnet = defineChain({
   blockExplorers: { default: { name: "Arcscan", url: "https://explorer.testnet.arc.io" } },
 });
 
-export const chains = [unichain, unichainSepolia, arcTestnet] as const;
+export const chains = [unichainFork, unichainSepolia, arcTestnet] as const;
+export const networkMode = process.env.NEXT_PUBLIC_NETWORK === "sepolia" ? "sepolia" : "fork";
 
 export const addresses = {
   aqua: "0x1111113CCf1426A8E30e2bfF5E005d929bF6a90a" as const,

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useAccount, useConnect, useDisconnect } from "wagmi";
 
 import { Button } from "@/components/ui/button";
+import { networkMode } from "@/lib/chains";
 import { cn } from "@/lib/utils";
 
 const links = [
@@ -25,9 +26,14 @@ export function Shell({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-white text-[#18181B]">
       <header className="sticky top-0 z-20 border-b border-black/8 bg-white/90 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 md:px-6">
-          <Link href="/" className="text-[15px] font-semibold tracking-tight">
-            WalletDesk
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link href="/" className="text-[15px] font-semibold tracking-tight">
+              WalletDesk
+            </Link>
+            <span className="rounded-full bg-[#00BBFF]/15 px-2 py-0.5 text-[11px] font-medium text-[#0B6E99]">
+              {networkMode === "sepolia" ? "Unichain Sepolia" : "Unichain fork"}
+            </span>
+          </div>
           <nav className="hidden items-center gap-1 sm:flex">
             {links.map((link) => (
               <Link

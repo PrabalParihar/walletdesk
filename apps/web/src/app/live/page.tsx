@@ -1,78 +1,165 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPublicClient, formatUnits, http } from "viem";
+import { useAccount, useChainId, usePublicClient, useSwitchChain, useWriteContract } from "wagmi";
 
+import { Notice } from "@/components/notice";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  STORAGE_KEY,
-  formatUnits18,
-  parseUnits18,
-  quoteExactIn,
-  type DeskDraft,
-} from "@/lib/desk";
+import { aquaAbi, erc20Abi, hookAbi, poolKey, routerAbi, shortError, type Deployment } from "@/lib/contracts";
+import { parseUnits18 } from "@/lib/desk";
+import { useDeployment } from "@/lib/use-deployment";
 
-type Preview = {
-  poolIn: bigint;
-  shelfIn: bigint;
-  shelfOut: bigint;
+type Fill = {
+  maker: `0x${string}`;
+  residualIn: bigint;
+  filledOut: bigint;
   feeOut: bigint;
-  priceX18: bigint;
+  fillId: `0x${string}`;
 };
 
+type KeeperFill = {
+  fillId: string;
+  txHash: string;
+  residualIn: string | null;
+  filledOut: string | null;
+  feeOut: string;
+  transfers: { event: string; token: string; amount: string }[];
+  credited: boolean;
+  creditNote?: string;
+};
+
+type Balances = { wallet0: bigint; wallet1: bigint; virtual0: bigint; virtual1: bigint };
+
 export default function LivePage() {
-  const [desk, setDesk] = useState<DeskDraft | null>(null);
+  const state = useDeployment();
+  const { address, isConnected } = useAccount();
+  const chainId = useChainId();
+  const { switchChainAsync } = useSwitchChain();
+  const walletClient = usePublicClient();
+  const { writeContractAsync } = useWriteContract();
   const [swapSize, setSwapSize] = useState("5");
-  const [preview, setPreview] = useState<Preview | null>(null);
+  const [fill, setFill] = useState<Fill | null>(null);
+  const [balances, setBalances] = useState<Balances | null>(null);
+  const [keeper, setKeeper] = useState<KeeperFill[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [status, setStatus] = useState<string | null>(null);
+  const [swapHash, setSwapHash] = useState<string | null>(null);
+
+  const deployment = state.status === "ready" ? state.deployment : null;
 
   useEffect(() => {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return;
-    const parsed = JSON.parse(raw) as DeskDraft;
-    setDesk(parsed);
-    if (parsed.swapSize) setSwapSize(parsed.swapSize);
-  }, []);
+    if (!deployment) return;
+    let cancelled = false;
+    const client = createPublicClient({ transport: http(deployment.rpcUrl) });
+    async function load(current: Deployment) {
+      setLoading(true);
+      try {
+        const last = await client.readContract({
+          address: current.hook,
+          abi: hookAbi,
+          functionName: "lastFill",
+          args: [current.poolId],
+        });
+        const [maker, , , residualIn, filledOut, feeOut, fillId] = last;
+        const [wallet0, wallet1, virtual] = await Promise.all([
+          client.readContract({ address: current.token0, abi: erc20Abi, functionName: "balanceOf", args: [current.maker] }),
+          client.readContract({ address: current.token1, abi: erc20Abi, functionName: "balanceOf", args: [current.maker] }),
+          client.readContract({
+            address: current.aqua,
+            abi: aquaAbi,
+            functionName: "safeBalances",
+            args: [current.maker, current.swapVm, current.strategyHash, current.token0, current.token1],
+          }),
+        ]);
+        let keeperFills: KeeperFill[] = [];
+        try {
+          const response = await fetch(`${current.keeperUrl}/fills`);
+          if (response.ok) {
+            const body = (await response.json()) as { fills: KeeperFill[] };
+            keeperFills = body.fills;
+          }
+        } catch {
+          keeperFills = [];
+        }
+        if (!cancelled) {
+          setFill(maker === "0x0000000000000000000000000000000000000000" ? null : { maker, residualIn, filledOut, feeOut, fillId });
+          setBalances({ wallet0, wallet1, virtual0: virtual[0], virtual1: virtual[1] });
+          setKeeper(keeperFills);
+          setError(null);
+        }
+      } catch (caught) {
+        if (!cancelled) setError(shortError(caught));
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    void load(deployment);
+    const timer = window.setInterval(() => void load(deployment), 8000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [deployment]);
 
-  function run() {
-    if (!desk) {
-      setError("Build a program on the ship screen first.");
+  async function runSwap() {
+    if (!deployment || !address || !walletClient) {
+      setError("Connect the taker wallet on the demo chain.");
       return;
     }
     const amount = parseUnits18(swapSize);
-    const cap = parseUnits18(desk.poolCap);
-    const shelf = parseUnits18(desk.amount);
     if (amount === 0n) {
       setError("Enter a swap size.");
       return;
     }
-    if (cap === 0n || amount <= cap) {
-      setPreview({ poolIn: amount, shelfIn: 0n, shelfOut: 0n, feeOut: 0n, priceX18: 0n });
-      setError(null);
-      return;
-    }
-    const shelfIn = amount - cap;
-    const quoted = quoteExactIn({
-      balanceIn: shelf,
-      balanceOut: shelf,
-      amountIn: shelfIn,
-      priceLow: parseUnits18(desk.priceLow),
-      priceHigh: parseUnits18(desk.priceHigh),
-      feeBps: BigInt(desk.feeBps || "0"),
-      start: BigInt(Math.floor(desk.savedAt / 1000)),
-      halfLife: BigInt(desk.halfLife || "0"),
-      timestamp: BigInt(Math.floor(Date.now() / 1000)),
-    });
-    if ("error" in quoted) {
-      setError(quoted.error);
-      setPreview(null);
-      return;
-    }
-    setPreview({ poolIn: cap, shelfIn, shelfOut: quoted.amountOut, feeOut: quoted.feeOut, priceX18: quoted.priceX18 });
+    setBusy(true);
     setError(null);
+    setSwapHash(null);
+    try {
+      if (chainId !== deployment.chainId) {
+        setStatus("Switching network");
+        await switchChainAsync({ chainId: deployment.chainId });
+      }
+      const allowance = await walletClient.readContract({
+        address: deployment.token0,
+        abi: erc20Abi,
+        functionName: "allowance",
+        args: [address, deployment.overflowRouter],
+      });
+      if (allowance < amount) {
+        setStatus("Approving the overflow router");
+        const hash = await writeContractAsync({
+          address: deployment.token0,
+          abi: erc20Abi,
+          functionName: "approve",
+          args: [deployment.overflowRouter, amount],
+          chainId: deployment.chainId,
+        });
+        await walletClient.waitForTransactionReceipt({ hash });
+      }
+      setStatus("Swapping through OverflowRouter");
+      const hash = await writeContractAsync({
+        address: deployment.overflowRouter,
+        abi: routerAbi,
+        functionName: "swapExactInput",
+        args: [poolKey(deployment), true, amount, 0n, address],
+        chainId: deployment.chainId,
+      });
+      await walletClient.waitForTransactionReceipt({ hash });
+      setSwapHash(hash);
+      setStatus(null);
+    } catch (caught) {
+      setStatus(null);
+      setError(shortError(caught));
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -81,76 +168,95 @@ export default function LivePage() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>Desk status</CardTitle>
-            <Badge className="bg-[#00BBFF] text-white">{desk ? "preview" : "empty"}</Badge>
+            <Badge className="bg-[#00BBFF] text-white">{loading ? "loading" : fill ? "live" : "empty"}</Badge>
           </div>
         </CardHeader>
         <CardContent className="space-y-3 text-[13px]">
-          {desk ? (
-            <>
-              <p>
-                {desk.symbolIn} / {desk.symbolOut} · fee {desk.feeBps} bps · half life {desk.halfLife}s
-              </p>
-              <div className="overflow-hidden rounded-[10px] border border-black/8">
-                <table className="w-full text-left">
-                  <thead className="bg-[#F2F2F3] text-[#5D5D66]">
-                    <tr>
-                      <th className="px-3 py-2 font-medium">Side</th>
-                      <th className="px-3 py-2 font-medium">Wallet</th>
-                      <th className="px-3 py-2 font-medium">Virtual</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr className="border-t border-black/8">
-                      <td className="px-3 py-2">{desk.symbolIn}</td>
-                      <td className="px-3 py-2">Unchanged by ship</td>
-                      <td className="px-3 py-2">{desk.amount}</td>
-                    </tr>
-                    <tr className="border-t border-black/8">
-                      <td className="px-3 py-2">{desk.symbolOut}</td>
-                      <td className="px-3 py-2">Unchanged by ship</td>
-                      <td className="px-3 py-2">{desk.amount}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-              <p className="break-all font-mono text-xs text-[#5D5D66]">{desk.programHash}</p>
-            </>
-          ) : (
-            <p className="text-[#5D5D66]">No local desk yet. Ship one, then come back to preview the split.</p>
-          )}
+          {state.status === "missing" ? (
+            <Notice tone="info">Run ./script/demo.sh to fork Unichain, ship a maker, and place an overflow fill on this page.</Notice>
+          ) : null}
+          {state.status === "error" ? <Notice tone="error">{state.error}</Notice> : null}
+          {deployment && balances ? (
+            <div className="overflow-hidden rounded-[10px] border border-black/8">
+              <table className="w-full text-left">
+                <thead className="bg-[#F2F2F3] text-[#5D5D66]">
+                  <tr>
+                    <th className="px-3 py-2 font-medium">Side</th>
+                    <th className="px-3 py-2 font-medium">Wallet</th>
+                    <th className="px-3 py-2 font-medium">Virtual</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <BalanceRow symbol={deployment.symbol0} wallet={balances.wallet0} virtual={balances.virtual0} />
+                  <BalanceRow symbol={deployment.symbol1} wallet={balances.wallet1} virtual={balances.virtual1} />
+                </tbody>
+              </table>
+            </div>
+          ) : deployment && loading ? (
+            <p className="text-[#5D5D66]">Reading the fork…</p>
+          ) : null}
+          {error ? <Notice tone="error">{error}</Notice> : null}
         </CardContent>
       </Card>
       <Card className="shadow-[0_8px_30px_rgba(0,0,0,0.04)]">
         <CardHeader>
-          <CardTitle>Simulate overflow</CardTitle>
+          <CardTitle>Overflow fill</CardTitle>
           <p className="text-[13px] text-[#5D5D66]">
-            Local math only. The same formula is what DeskBand runs onchain. A fork test asserts the token transfers.
+            The seeded swap is already on the fork. Run another one from the taker wallet. Amounts above the pool cap pull the maker shelf.
           </p>
         </CardHeader>
         <CardContent className="grid gap-4">
+          {fill ? (
+            <div className="overflow-hidden rounded-[10px] border border-black/8 text-[13px]">
+              <table className="w-full">
+                <tbody>
+                  <Line label="Maker" value={fill.maker} />
+                  <Line label="Residual in" value={formatUnits(fill.residualIn, 18)} />
+                  <Line label="Shelf out (pulled)" value={formatUnits(fill.filledOut, 18)} />
+                  <Line label="Fee kept on the shelf" value={formatUnits(fill.feeOut, 18)} />
+                  <Line label="Fill id" value={fill.fillId} />
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="rounded-[10px] border border-dashed border-black/15 bg-[#F2F2F3] px-3 py-6 text-center text-[13px] text-[#5D5D66]">
+              No overflow fill on this pool yet.
+            </p>
+          )}
+          {keeper[0] ? (
+            <div className="space-y-2 text-[13px]">
+              <p className="text-[#5D5D66]">Keeper transfers</p>
+              <p className="break-all font-mono text-xs">{keeper[0].txHash}</p>
+              {keeper[0].transfers.map((transfer, index) => (
+                <p key={`${transfer.event}-${index}`}>
+                  {transfer.event} {formatUnits(BigInt(transfer.amount), 18)}
+                </p>
+              ))}
+              <p>{keeper[0].credited ? "Fee credited on the local treasury." : keeper[0].creditNote || "Credit pending."}</p>
+            </div>
+          ) : null}
           <div className="grid gap-1.5">
             <Label>Swap size, input units</Label>
             <Input value={swapSize} onChange={(event) => setSwapSize(event.target.value)} />
           </div>
-          <Button type="button" onClick={run}>
-            Run overflow
+          {status ? <Notice tone="info">{status}…</Notice> : null}
+          {swapHash ? <Notice tone="ok">Swap mined. {swapHash}</Notice> : null}
+          <Button type="button" onClick={() => void runSwap()} disabled={busy || !isConnected || !deployment}>
+            {busy ? "Swapping" : isConnected ? "Run overflow" : "Connect the taker"}
           </Button>
-          {error ? <p className="text-[13px] text-[#E11D48]">{error}</p> : null}
-          {preview ? (
-            <div className="overflow-hidden rounded-[10px] border border-black/8 text-[13px]">
-              <table className="w-full">
-                <tbody>
-                  <Line label="Pool input" value={formatUnits18(preview.poolIn)} />
-                  <Line label="Shelf input (Pulled side pays this in)" value={formatUnits18(preview.shelfIn)} />
-                  <Line label="Shelf output (Pulled)" value={formatUnits18(preview.shelfOut)} />
-                  <Line label="Fee kept on the shelf" value={formatUnits18(preview.feeOut)} />
-                </tbody>
-              </table>
-            </div>
-          ) : null}
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+function BalanceRow({ symbol, wallet, virtual }: { symbol: string; wallet: bigint; virtual: bigint }) {
+  return (
+    <tr className="border-t border-black/8">
+      <td className="px-3 py-2">{symbol}</td>
+      <td className="px-3 py-2 font-mono">{formatUnits(wallet, 18)}</td>
+      <td className="px-3 py-2 font-mono">{formatUnits(virtual, 18)}</td>
+    </tr>
   );
 }
 
@@ -158,7 +264,7 @@ function Line({ label, value }: { label: string; value: string }) {
   return (
     <tr className="border-t border-black/8 first:border-t-0">
       <td className="px-3 py-2 text-[#5D5D66]">{label}</td>
-      <td className="px-3 py-2 text-right font-mono">{value}</td>
+      <td className="px-3 py-2 text-right font-mono text-xs break-all">{value}</td>
     </tr>
   );
 }

@@ -1,41 +1,56 @@
 "use client";
 
 import { useState } from "react";
+import { useAccount, useChainId, usePublicClient, useSwitchChain, useWriteContract } from "wagmi";
 
+import { Notice } from "@/components/notice";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { addresses } from "@/lib/chains";
-import { STORAGE_KEY, encodeProgram, parseUnits18, programHash, type DeskDraft } from "@/lib/desk";
+import { aquaAbi, builderAbi, erc20Abi, hookAbi, poolKey, shortError } from "@/lib/contracts";
+import { parseUnits18, programHash, type DeskDraft, STORAGE_KEY, encodeProgram } from "@/lib/desk";
+import { useDeployment } from "@/lib/use-deployment";
 
 const defaults = {
-  symbolIn: "DA",
-  symbolOut: "DB",
   amount: "1000",
   priceLow: "0.99",
   priceHigh: "1.01",
   feeBps: "30",
   halfLife: "0",
   poolCap: "1",
-  swapSize: "5",
 };
 
 export default function DeskPage() {
+  const state = useDeployment();
+  const { address, isConnected } = useAccount();
+  const chainId = useChainId();
+  const { switchChainAsync } = useSwitchChain();
+  const client = usePublicClient();
+  const { writeContractAsync } = useWriteContract();
   const [form, setForm] = useState(defaults);
-  const [saved, setSaved] = useState<DeskDraft | null>(null);
+  const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<{ hash: string; strategy: `0x${string}` } | null>(null);
 
   function set<K extends keyof typeof defaults>(key: K, value: string) {
     setForm((current) => ({ ...current, [key]: value }));
   }
 
-  function ship() {
+  async function ship() {
+    if (state.status !== "ready" || !address || !client) {
+      setError("Connect a wallet on the demo chain first.");
+      return;
+    }
+    const deployment = state.deployment;
     const priceLow = parseUnits18(form.priceLow);
     const priceHigh = parseUnits18(form.priceHigh);
     const feeBps = Number(form.feeBps);
     const halfLife = Number(form.halfLife);
+    const shelf = parseUnits18(form.amount);
+    const cap = parseUnits18(form.poolCap);
     if (priceLow === 0n || priceHigh < priceLow) {
       setError("Set a price band with a positive low and a high at or above it.");
       return;
@@ -48,22 +63,95 @@ export default function DeskPage() {
       setError("Half life must be a whole number of seconds, or 0 to skip decay.");
       return;
     }
-    const program = encodeProgram({
-      priceLow,
-      priceHigh,
-      feeBps,
-      start: Math.floor(Date.now() / 1000),
-      halfLife,
-    });
-    const draft: DeskDraft = {
-      ...form,
-      program,
-      programHash: programHash(program),
-      savedAt: Date.now(),
-    };
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(draft));
-    setSaved(draft);
+    if (shelf === 0n || cap === 0n) {
+      setError("Shelf amount and pool cap must be greater than zero.");
+      return;
+    }
+
+    setBusy(true);
     setError(null);
+    setResult(null);
+    try {
+      if (chainId !== deployment.chainId) {
+        setStatus("Switching network");
+        await switchChainAsync({ chainId: deployment.chainId });
+      }
+      const block = await client.getBlock();
+      const start = Number(block.timestamp);
+      for (const token of [deployment.token0, deployment.token1]) {
+        const allowance = await client.readContract({
+          address: token,
+          abi: erc20Abi,
+          functionName: "allowance",
+          args: [address, deployment.aqua],
+        });
+        if (allowance < shelf) {
+          setStatus(`Approving ${token === deployment.token0 ? deployment.symbol0 : deployment.symbol1}`);
+          const hash = await writeContractAsync({
+            address: token,
+            abi: erc20Abi,
+            functionName: "approve",
+            args: [deployment.aqua, shelf],
+            chainId: deployment.chainId,
+          });
+          await client.waitForTransactionReceipt({ hash });
+        }
+      }
+
+      setStatus("Packing the DeskBand program");
+      const built = await client.readContract({
+        address: deployment.orderBuilder,
+        abi: builderAbi,
+        functionName: "buildBand",
+        args: [address, priceLow, priceHigh, feeBps, start, halfLife],
+      });
+      const traits = built[0];
+      const data = built[1];
+      const strategy = built[2];
+
+      setStatus("Shipping to Aqua");
+      const shipHash = await writeContractAsync({
+        address: deployment.aqua,
+        abi: aquaAbi,
+        functionName: "ship",
+        args: [deployment.swapVm, strategy, [deployment.token0, deployment.token1], [shelf, shelf]],
+        chainId: deployment.chainId,
+      });
+      await client.waitForTransactionReceipt({ hash: shipHash });
+
+      setStatus("Registering the desk on the hook");
+      const registerHash = await writeContractAsync({
+        address: deployment.hook,
+        abi: hookAbi,
+        functionName: "registerDesk",
+        args: [poolKey(deployment), { maker: address, traits, data }, cap],
+        chainId: deployment.chainId,
+      });
+      await client.waitForTransactionReceipt({ hash: registerHash });
+
+      const draft: DeskDraft = {
+        symbolIn: deployment.symbol0,
+        symbolOut: deployment.symbol1,
+        amount: form.amount,
+        priceLow: form.priceLow,
+        priceHigh: form.priceHigh,
+        feeBps: form.feeBps,
+        halfLife: form.halfLife,
+        poolCap: form.poolCap,
+        swapSize: "5",
+        program: encodeProgram({ priceLow, priceHigh, feeBps, start, halfLife }),
+        programHash: programHash(strategy),
+        savedAt: Date.now(),
+      };
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(draft));
+      setResult({ hash: registerHash, strategy });
+      setStatus(null);
+    } catch (caught) {
+      setStatus(null);
+      setError(shortError(caught));
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -72,53 +160,59 @@ export default function DeskPage() {
         <CardHeader>
           <CardTitle>Ship a desk</CardTitle>
           <p className="text-[13px] text-[#5D5D66]">
-            This preview packs the DeskBand program the router runs. Shipping on Aqua does not move tokens. The fork test is the onchain proof.
+            Approve the Aqua registry, ship a DeskBand strategy, and register it on OverflowHook. Shipping does not move tokens.
           </p>
         </CardHeader>
         <CardContent className="grid gap-4">
+          {state.status === "loading" ? <Notice tone="info">Loading the deployment…</Notice> : null}
+          {state.status === "missing" ? (
+            <Notice tone="info">
+              No deployment yet. From the repo root run <span className="font-mono">./script/demo.sh</span>. For Unichain Sepolia, set{" "}
+              <span className="font-mono">NEXT_PUBLIC_NETWORK=sepolia</span> and the contract addresses in{" "}
+              <span className="font-mono">apps/web/.env.local</span> after you broadcast the deploy script.
+            </Notice>
+          ) : null}
+          {state.status === "error" ? <Notice tone="error">{state.error}</Notice> : null}
+          {state.status === "ready" ? (
+            <Notice tone="info">
+              Pair {state.deployment.symbol0}/{state.deployment.symbol1} on chain {state.deployment.chainId}. Seeded maker{" "}
+              <span className="font-mono">{state.deployment.maker}</span>.
+            </Notice>
+          ) : null}
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Token in symbol" value={form.symbolIn} onChange={(v) => set("symbolIn", v)} />
-            <Field label="Token out symbol" value={form.symbolOut} onChange={(v) => set("symbolOut", v)} />
-            <Field label="Shelf amount (18 decimals)" value={form.amount} onChange={(v) => set("amount", v)} />
-            <Field label="Pool cap, input units" value={form.poolCap} onChange={(v) => set("poolCap", v)} />
-            <Field label="Price low" value={form.priceLow} onChange={(v) => set("priceLow", v)} />
-            <Field label="Price high" value={form.priceHigh} onChange={(v) => set("priceHigh", v)} />
-            <Field label="Fee bps" value={form.feeBps} onChange={(v) => set("feeBps", v)} />
-            <Field label="Half life, seconds" value={form.halfLife} onChange={(v) => set("halfLife", v)} />
+            <Field label="Shelf amount" value={form.amount} onChange={(value) => set("amount", value)} />
+            <Field label="Pool cap, input units" value={form.poolCap} onChange={(value) => set("poolCap", value)} />
+            <Field label="Price low" value={form.priceLow} onChange={(value) => set("priceLow", value)} />
+            <Field label="Price high" value={form.priceHigh} onChange={(value) => set("priceHigh", value)} />
+            <Field label="Fee bps" value={form.feeBps} onChange={(value) => set("feeBps", value)} />
+            <Field label="Half life, seconds" value={form.halfLife} onChange={(value) => set("halfLife", value)} />
           </div>
-          {error ? <p className="text-[13px] text-[#E11D48]">{error}</p> : null}
+          {status ? <Notice tone="info">{status}…</Notice> : null}
+          {error ? <Notice tone="error">{error}</Notice> : null}
           <div className="flex flex-wrap gap-2">
-            <Button type="button" variant="outline" disabled>
-              Approve Aqua
-            </Button>
-            <Button type="button" onClick={ship}>
-              Build program
+            <Button type="button" onClick={() => void ship()} disabled={busy || !isConnected || state.status !== "ready"}>
+              {busy ? "Working" : isConnected ? "Approve and ship" : "Connect a wallet"}
             </Button>
           </div>
-          <p className="text-[12px] leading-relaxed text-[#5D5D66]">
-            Approve is disabled here because this shell has no deployed desk. On a chain, the maker approves the Aqua registry{" "}
-            <span className="font-mono">{addresses.aqua}</span>, then calls ship. Wallet balances stay put.
-          </p>
         </CardContent>
       </Card>
       <Card className="bg-[#F2F2F3] shadow-none">
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>Program</CardTitle>
-            <Badge variant="secondary">{saved ? "saved locally" : "empty"}</Badge>
+            <Badge variant="secondary">{result ? "shipped" : "waiting"}</Badge>
           </div>
         </CardHeader>
         <CardContent className="space-y-3 text-[13px]">
-          <Row label="Virtual in" value={saved ? `${saved.amount} ${saved.symbolIn}` : "Not shipped"} />
-          <Row label="Virtual out" value={saved ? `${saved.amount} ${saved.symbolOut}` : "Not shipped"} />
           <Row label="Wallet movement" value="None on ship" />
+          <Row label="Registry" value={state.status === "ready" ? state.deployment.aqua : "Aqua"} />
           <div>
-            <p className="text-[#5D5D66]">Program hash</p>
-            <p className="mt-1 break-all font-mono text-xs">{saved?.programHash ?? "Build a program to hash the bytecode."}</p>
+            <p className="text-[#5D5D66]">Strategy bytes</p>
+            <p className="mt-1 break-all font-mono text-xs">{result?.strategy ?? "Ship to write the order Aqua stores."}</p>
           </div>
           <div>
-            <p className="text-[#5D5D66]">Bytes</p>
-            <p className="mt-1 break-all font-mono text-xs">{saved?.program ?? "Opcode 0, then 74 argument bytes."}</p>
+            <p className="text-[#5D5D66]">Register transaction</p>
+            <p className="mt-1 break-all font-mono text-xs">{result?.hash ?? "No transaction yet."}</p>
           </div>
         </CardContent>
       </Card>
@@ -139,7 +233,7 @@ function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-baseline justify-between gap-4">
       <span className="text-[#5D5D66]">{label}</span>
-      <span className="text-right">{value}</span>
+      <span className="max-w-[16rem] truncate text-right font-mono text-xs">{value}</span>
     </div>
   );
 }

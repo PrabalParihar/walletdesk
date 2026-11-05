@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 const steps = [
   { n: "01", title: "Ship", body: "Approve Aqua and register a DeskBand strategy. Tokens stay in the wallet." },
   { n: "02", title: "Catch overflow", body: "A large Uniswap v4 swap fills the pool up to a cap. The rest pulls from the maker." },
-  { n: "03", title: "Claim USDC", body: "An attestor credits the fill on Arc. The maker claims 6-decimal USDC." },
+  { n: "03", title: "Claim USDC", body: "On Unichain Sepolia, CCTP mints the fee as USDC on Arc. The local fork credits the same treasury directly." },
 ];
 
 export default function HomePage() {
