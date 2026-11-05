@@ -1,0 +1,16 @@
+# Workflow settings per target. Targets must match project.yaml.
+local-fork:
+  user-workflow:
+    workflow-name: "desk-guard-local"
+  workflow-artifacts:
+    workflow-path: "./main.ts"
+    config-path: "./config.local.json"
+    secrets-path: ""
+
+unichain-sepolia:
+  user-workflow:
+    workflow-name: "desk-guard-unichain-sepolia"
+  workflow-artifacts:
+    workflow-path: "./main.ts"
+    config-path: "./config.unichain-sepolia.json"
+    secrets-path: ""

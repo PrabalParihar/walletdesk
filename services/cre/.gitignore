@@ -1,0 +1,6 @@
+# Generated per deployment by desk-guard/scripts/make-config.mjs
+desk-guard/config.local.json
+# Output of `cre workflow build`
+desk-guard/*.wasm
+# Intermediate file left by cre-compile
+desk-guard/.cre_build_tmp.js

@@ -41,6 +41,22 @@ jobs:
       - name: Treasury source matches the Arc paste file
         run: cmp contracts/src/FeeShareTreasury.sol arc/FeeShareTreasury.sol
 
+  cre:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/cre/desk-guard
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.4
+      - run: bun install --frozen-lockfile
+      - name: Typecheck
+        run: bun run typecheck
+      - name: Workflow unit tests
+        run: bun test
+
   web:
     runs-on: ubuntu-latest
     defaults:
