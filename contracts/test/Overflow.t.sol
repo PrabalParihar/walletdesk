@@ -444,6 +444,21 @@ abstract contract OverflowFixture is Test {
         feed.onReport("", report); // same observation time cannot be replayed
         assertTrue(feed.supportsInterface(0x805f2132), "IReceiver interface id");
         assertTrue(feed.supportsInterface(0x01ffc9a7), "ERC165 interface id");
+        assertFalse(feed.supportsInterface(0xffffffff), "KeystoneForwarder requires false for 0xffffffff");
+    }
+
+    /// @notice The DON clock can run ahead of the chain (a fork sits behind wall time). Such a report must
+    ///         land, and freshness must use the write's block time, not the observation time.
+    function test_feedUsesWriteTimeForFreshness() public {
+        DeskPriceFeed feed = new DeskPriceFeed(address(this), address(this));
+        uint64 ahead = uint64(block.timestamp + 3600);
+        feed.onReport("", abi.encode(PoolId.unwrap(id), uint256(1e18), ahead));
+        (uint256 price, uint64 updatedAt) = feed.referenceOf(PoolId.unwrap(id));
+        assertEq(price, 1e18);
+        assertEq(updatedAt, uint64(block.timestamp));
+        assertEq(feed.lastObservedAt(PoolId.unwrap(id)), ahead);
+        vm.expectRevert(abi.encodeWithSelector(DeskPriceFeed.StaleReport.selector, ahead, ahead));
+        feed.onReport("", abi.encode(PoolId.unwrap(id), uint256(1e18), ahead));
     }
 
     function test_unfundedMakerIsSkipped() public {

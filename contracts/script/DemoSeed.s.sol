@@ -101,7 +101,8 @@ contract DemoSeed is DeskDeployBase {
         desk.hook = _deployHook(manager, desk.swapVm, Addresses.AQUA);
         desk.router = new OverflowRouter(manager);
         desk.stockRouter = new PoolSwapTest(manager);
-        // Locally the keeper key stands in for the CRE forwarder. On a real chain set the CRE forwarder.
+        // The keeper key stands in for the CRE forwarder by default. FEED_FORWARDER=0x6E9EE680ef59ef64Aa8C7371279c27E496b5eDc1
+        // hands the feed to the CRE MockKeystoneForwarder instead (see docs/CRE.md); then the keeper stops posting.
         desk.feed = new DeskPriceFeed(deployer, deployer);
         desk.hook.setPriceFeed(address(desk.feed), MAX_REFERENCE_AGE);
         desk.builder = _deployArtifact("OrderBuilder.sol:OrderBuilder", "");
@@ -113,6 +114,8 @@ contract DemoSeed is DeskDeployBase {
         (desk.token0, desk.token1, desk.key) =
             _openDemoPool(IPoolManager(Addresses.UNICHAIN_POOL_MANAGER), desk.hook, vm.addr(deployerPk), CAP);
         desk.feed.onReport("", abi.encode(PoolId.unwrap(desk.key.toId()), uint256(1e18), uint64(block.timestamp)));
+        address creForwarder = vm.envOr("FEED_FORWARDER", address(0));
+        if (creForwarder != address(0)) desk.feed.setForwarder(creForwarder);
         vm.stopBroadcast();
     }
 

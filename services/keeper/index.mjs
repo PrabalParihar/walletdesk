@@ -41,6 +41,7 @@ const hookAbi = parseAbi([
 const feedAbi = parseAbi([
   "function onReport(bytes metadata, bytes report)",
   "function referenceOf(bytes32 poolId) view returns (uint256 priceX18, uint64 updatedAt)",
+  "function lastObservedAt(bytes32 poolId) view returns (uint64)",
   "function forwarder() view returns (address)",
 ]);
 
@@ -312,14 +313,15 @@ async function pushReference() {
       reference.note = "no usable quote from the public APIs; the hook fails closed when the reference ages out";
       return;
     }
-    const block = await publicClient.getBlock();
-    const [, updatedAt] = await publicClient.readContract({
+    // Observation time is the wall clock (like the CRE DON clock); it only has to increase per pool.
+    const lastObserved = await publicClient.readContract({
       address: deployment.priceFeed,
       abi: feedAbi,
-      functionName: "referenceOf",
+      functionName: "lastObservedAt",
       args: [deployment.poolId],
     });
-    const observedAt = block.timestamp > updatedAt ? block.timestamp : updatedAt + 1n;
+    const wallClock = BigInt(Math.floor(Date.now() / 1000));
+    const observedAt = wallClock > lastObserved ? wallClock : lastObserved + 1n;
     const priceX18 = toPriceX18(price, deployment.decimals0 ?? 18, deployment.decimals1 ?? 18);
     const report = encodeAbiParameters(
       [{ type: "bytes32" }, { type: "uint256" }, { type: "uint64" }],

@@ -16,6 +16,9 @@ interface IDeskPriceFeed {
 }
 
 /// @title DeskPriceFeed
+/// @notice CRE forwarders: Unichain Sepolia simulation (MockKeystoneForwarder) 0x6E9EE680ef59ef64Aa8C7371279c27E496b5eDc1,
+///         deployed workflows (KeystoneForwarder) 0x98B8335d29Aca40840Ed8426dA1A0aAa8677d8D1. CRE does not support
+///         Unichain mainnet. See docs/CRE.md.
 /// @notice Off-chain reference price per Uniswap v4 pool, written by a Chainlink CRE workflow.
 /// @dev `OverflowHook` reads this before it fills from a maker desk. If the desk quote deviates from the
 ///      reference by more than the maker's limit, or the reference is stale, the hook skips the desk and
@@ -24,22 +27,21 @@ interface IDeskPriceFeed {
 ///
 ///      Report: `abi.encode(bytes32 poolId, uint256 priceX18, uint64 observedAt)`.
 ///      `priceX18` is raw token1 per 1 raw token0, scaled by 1e18 (the Uniswap v4 price unit).
-///      `observedAt` is the workflow's observation time in seconds. Reports must move forward in time,
-///      so a replayed or reordered report cannot roll the price back.
+///      `observedAt` is the workflow's observation time (DON clock) and only orders reports: it must strictly
+///      increase per pool, so a replayed or reordered report cannot roll the price back. Freshness is measured
+///      from `updatedAt`, the block time of the write, because chain and DON clocks can drift (a local fork
+///      can sit minutes behind wall time). The CRE forwarder swallows `onReport` reverts, so this function
+///      avoids clock checks that would fail silently.
 contract DeskPriceFeed is IReceiver, IERC165 {
     error NotOwner();
     error NotForwarder(address caller);
     error ZeroAddress();
     error ZeroPrice();
-    error StaleReport(uint64 observedAt, uint64 current);
-    error FutureReport(uint64 observedAt, uint256 nowTs);
+    error StaleReport(uint64 observedAt, uint64 lastObservedAt);
 
-    event ReferenceUpdated(bytes32 indexed poolId, uint256 priceX18, uint64 observedAt);
+    event ReferenceUpdated(bytes32 indexed poolId, uint256 priceX18, uint64 observedAt, uint64 updatedAt);
     event ForwarderSet(address indexed forwarder);
     event OwnerSet(address indexed owner);
-
-    /// @notice Clock skew allowed between the workflow's observation time and the chain.
-    uint256 public constant MAX_FUTURE_SKEW = 300;
 
     struct Reference {
         uint192 priceX18;
@@ -51,6 +53,7 @@ contract DeskPriceFeed is IReceiver, IERC165 {
     address public forwarder;
 
     mapping(bytes32 poolId => Reference) internal _refs;
+    mapping(bytes32 poolId => uint64) public lastObservedAt;
 
     constructor(address forwarder_, address owner_) {
         if (forwarder_ == address(0) || owner_ == address(0)) revert ZeroAddress();
@@ -64,12 +67,11 @@ contract DeskPriceFeed is IReceiver, IERC165 {
         if (msg.sender != forwarder) revert NotForwarder(msg.sender);
         (bytes32 poolId, uint256 priceX18, uint64 observedAt) = abi.decode(report, (bytes32, uint256, uint64));
         if (priceX18 == 0 || priceX18 > type(uint192).max) revert ZeroPrice();
-        if (observedAt > block.timestamp + MAX_FUTURE_SKEW) revert FutureReport(observedAt, block.timestamp);
-        Reference storage ref = _refs[poolId];
-        if (observedAt <= ref.updatedAt) revert StaleReport(observedAt, ref.updatedAt);
-        ref.priceX18 = uint192(priceX18);
-        ref.updatedAt = observedAt;
-        emit ReferenceUpdated(poolId, priceX18, observedAt);
+        uint64 last = lastObservedAt[poolId];
+        if (observedAt <= last) revert StaleReport(observedAt, last);
+        lastObservedAt[poolId] = observedAt;
+        _refs[poolId] = Reference({priceX18: uint192(priceX18), updatedAt: uint64(block.timestamp)});
+        emit ReferenceUpdated(poolId, priceX18, observedAt, uint64(block.timestamp));
     }
 
     function referenceOf(bytes32 poolId) external view returns (uint256 priceX18, uint64 updatedAt) {
