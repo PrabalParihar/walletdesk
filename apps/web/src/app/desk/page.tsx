@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { parseUnits } from "viem";
 import { useAccount, useChainId, usePublicClient, useSwitchChain, useWriteContract } from "wagmi";
 
 import { Notice } from "@/components/notice";
@@ -10,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { aquaAbi, builderAbi, erc20Abi, hookAbi, poolKey, shortError } from "@/lib/contracts";
-import { parseUnits18, programHash, type DeskDraft, STORAGE_KEY, encodeProgram } from "@/lib/desk";
+import { encodeProgram, priceToX18, programHash, STORAGE_KEY, type DeskDraft } from "@/lib/desk";
 import { useDeployment } from "@/lib/use-deployment";
 
 const defaults = {
@@ -19,8 +20,16 @@ const defaults = {
   priceHigh: "1.01",
   feeBps: "30",
   halfLife: "0",
-  poolCap: "1",
+  maxDeviationBps: "100",
 };
+
+function safeUnits(value: string, decimals: number): bigint {
+  try {
+    return parseUnits(value.trim(), decimals);
+  } catch {
+    return 0n;
+  }
+}
 
 export default function DeskPage() {
   const state = useDeployment();
@@ -45,12 +54,13 @@ export default function DeskPage() {
       return;
     }
     const deployment = state.deployment;
-    const priceLow = parseUnits18(form.priceLow);
-    const priceHigh = parseUnits18(form.priceHigh);
+    const priceLow = priceToX18(form.priceLow, deployment.decimals0, deployment.decimals1);
+    const priceHigh = priceToX18(form.priceHigh, deployment.decimals0, deployment.decimals1);
     const feeBps = Number(form.feeBps);
     const halfLife = Number(form.halfLife);
-    const shelf = parseUnits18(form.amount);
-    const cap = parseUnits18(form.poolCap);
+    const maxDeviationBps = Number(form.maxDeviationBps);
+    const shelf0 = safeUnits(form.amount, deployment.decimals0);
+    const shelf1 = safeUnits(form.amount, deployment.decimals1);
     if (priceLow === 0n || priceHigh < priceLow) {
       setError("Set a price band with a positive low and a high at or above it.");
       return;
@@ -63,8 +73,12 @@ export default function DeskPage() {
       setError("Half life must be a whole number of seconds, or 0 to skip decay.");
       return;
     }
-    if (shelf === 0n || cap === 0n) {
-      setError("Shelf amount and pool cap must be greater than zero.");
+    if (!Number.isInteger(maxDeviationBps) || maxDeviationBps < 1 || maxDeviationBps > 10_000) {
+      setError("Max deviation must be an integer from 1 to 10000 bps.");
+      return;
+    }
+    if (shelf0 === 0n || shelf1 === 0n) {
+      setError("Shelf amount must be greater than zero.");
       return;
     }
 
@@ -78,7 +92,10 @@ export default function DeskPage() {
       }
       const block = await client.getBlock();
       const start = Number(block.timestamp);
-      for (const token of [deployment.token0, deployment.token1]) {
+      for (const [token, shelf] of [
+        [deployment.token0, shelf0],
+        [deployment.token1, shelf1],
+      ] as const) {
         const allowance = await client.readContract({
           address: token,
           abi: erc20Abi,
@@ -114,7 +131,7 @@ export default function DeskPage() {
         address: deployment.aqua,
         abi: aquaAbi,
         functionName: "ship",
-        args: [deployment.swapVm, strategy, [deployment.token0, deployment.token1], [shelf, shelf]],
+        args: [deployment.swapVm, strategy, [deployment.token0, deployment.token1], [shelf0, shelf1]],
         chainId: deployment.chainId,
       });
       await client.waitForTransactionReceipt({ hash: shipHash });
@@ -124,7 +141,7 @@ export default function DeskPage() {
         address: deployment.hook,
         abi: hookAbi,
         functionName: "registerDesk",
-        args: [poolKey(deployment), { maker: address, traits, data }, cap],
+        args: [poolKey(deployment), { maker: address, traits, data }, maxDeviationBps],
         chainId: deployment.chainId,
       });
       await client.waitForTransactionReceipt({ hash: registerHash });
@@ -137,7 +154,7 @@ export default function DeskPage() {
         priceHigh: form.priceHigh,
         feeBps: form.feeBps,
         halfLife: form.halfLife,
-        poolCap: form.poolCap,
+        maxDeviationBps: form.maxDeviationBps,
         swapSize: "5",
         program: encodeProgram({ priceLow, priceHigh, feeBps, start, halfLife }),
         programHash: programHash(strategy),
@@ -160,7 +177,9 @@ export default function DeskPage() {
         <CardHeader>
           <CardTitle>Ship a desk</CardTitle>
           <p className="text-[13px] text-[#5D5D66]">
-            Approve the Aqua registry, ship a DeskBand strategy, and register it on OverflowHook. Shipping does not move tokens.
+            Approve the Aqua registry, ship a DeskBand strategy, and register it on OverflowHook. Shipping does not move tokens. Prices are{" "}
+            {state.status === "ready" ? `${state.deployment.symbol1} per ${state.deployment.symbol0}` : "token1 per token0"}. The desk is
+            skipped whenever its quote is further than the max deviation from the pool spot or the Chainlink CRE reference.
           </p>
         </CardHeader>
         <CardContent className="grid gap-4">
@@ -181,11 +200,11 @@ export default function DeskPage() {
           ) : null}
           <div className="grid grid-cols-2 gap-3">
             <Field label="Shelf amount" value={form.amount} onChange={(value) => set("amount", value)} />
-            <Field label="Pool cap, input units" value={form.poolCap} onChange={(value) => set("poolCap", value)} />
+            <Field label="Max deviation, bps" value={form.maxDeviationBps} onChange={(value) => set("maxDeviationBps", value)} />
             <Field label="Price low" value={form.priceLow} onChange={(value) => set("priceLow", value)} />
             <Field label="Price high" value={form.priceHigh} onChange={(value) => set("priceHigh", value)} />
             <Field label="Fee bps" value={form.feeBps} onChange={(value) => set("feeBps", value)} />
-            <Field label="Half life, seconds" value={form.halfLife} onChange={(value) => set("halfLife", value)} />
+            <Field label="Decay half life, seconds (0 = off)" value={form.halfLife} onChange={(value) => set("halfLife", value)} />
           </div>
           {status ? <Notice tone="info">{status}…</Notice> : null}
           {error ? <Notice tone="error">{error}</Notice> : null}

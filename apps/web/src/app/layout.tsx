@@ -18,7 +18,7 @@ const mono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "WalletDesk",
-  description: "Turn idle tokens in your wallet into a Uniswap market. Fees settle as USDC on Arc.",
+  description: "Turn idle tokens in your wallet into a Uniswap market. Uniswap v4 hook + 1inch Aqua SwapVM + Chainlink CRE price guard.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

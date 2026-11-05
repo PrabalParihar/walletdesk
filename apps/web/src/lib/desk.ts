@@ -11,7 +11,7 @@ export type DeskDraft = {
   priceHigh: string;
   feeBps: string;
   halfLife: string;
-  poolCap: string;
+  maxDeviationBps: string;
   swapSize: string;
   program: string;
   programHash: string;
@@ -53,10 +53,37 @@ export function encodeProgram(input: {
   return encodePacked(["uint8", "uint8", "bytes"], [0, argBytes, args]);
 }
 
+/**
+ * Human price (token1 per token0, e.g. "3000" USDC per WETH) to the on-chain unit:
+ * raw token1 per 1 raw token0, scaled by 1e18. Matches DeskBandMath and the Uniswap v4 price.
+ */
+export function priceToX18(value: string, decimals0: number, decimals1: number): bigint {
+  const human = parseUnits18(value);
+  return (human * 10n ** BigInt(decimals1)) / 10n ** BigInt(decimals0);
+}
+
+/** On-chain price unit back to a human token1-per-token0 string. */
+export function formatPriceX18(priceX18: bigint, decimals0: number, decimals1: number, digits = 6): string {
+  const human = (priceX18 * 10n ** BigInt(decimals0)) / 10n ** BigInt(decimals1);
+  return formatUnits18(human, digits);
+}
+
+/** Mirror of DeskBandMath.bandPrice: value-weighted share of token1 on the shelf, at the band mid. */
+export function bandPrice(balance0: bigint, balance1: bigint, priceLow: bigint, priceHigh: bigint): bigint {
+  const mid = priceLow + (priceHigh - priceLow) / 2n;
+  const value0 = (balance0 * mid) / PRICE;
+  const total = value0 + balance1;
+  if (total === 0n) return priceLow;
+  const weight1 = (balance1 * PRICE) / total;
+  return priceLow + ((priceHigh - priceLow) * weight1) / PRICE;
+}
+
+/** Mirror of DeskBandMath.quoteExactIn. `zeroForOne` is true when token0 (lower address) is sold. */
 export function quoteExactIn(input: {
   balanceIn: bigint;
   balanceOut: bigint;
   amountIn: bigint;
+  zeroForOne: boolean;
   priceLow: bigint;
   priceHigh: bigint;
   feeBps: bigint;
@@ -68,10 +95,11 @@ export function quoteExactIn(input: {
   if (input.feeBps > BPS) return { error: "Fee is above 10,000 bps." };
   if (input.balanceOut === 0n) return { error: "Shelf has no output inventory." };
   if (input.amountIn === 0n) return { error: "Input is zero." };
-  const denom = input.balanceIn + input.balanceOut;
-  const weight = (input.balanceOut * PRICE) / denom;
-  const priceX18 = input.priceLow + ((input.priceHigh - input.priceLow) * weight) / PRICE;
-  let gross = (input.amountIn * priceX18) / PRICE;
+  const [balance0, balance1] = input.zeroForOne
+    ? [input.balanceIn, input.balanceOut]
+    : [input.balanceOut, input.balanceIn];
+  const priceX18 = bandPrice(balance0, balance1, input.priceLow, input.priceHigh);
+  let gross = input.zeroForOne ? (input.amountIn * priceX18) / PRICE : (input.amountIn * PRICE) / priceX18;
   if (input.halfLife !== 0n && input.timestamp > input.start) {
     const elapsed = input.timestamp - input.start;
     gross = (gross * input.halfLife) / (input.halfLife + elapsed);

@@ -42,6 +42,7 @@ export default function FeesPage() {
       setLoading(true);
       try {
         const usdc = deployment!.arcTreasury ? addresses.arcUsdc : deployment!.usdc;
+        if (!usdc) return;
         const [amount, bps, treasuryBalance] = await Promise.all([
           client.readContract({ address: claimTreasury!, abi: treasuryAbi, functionName: "claimable", args: [who!] }),
           client.readContract({ address: claimTreasury!, abi: treasuryAbi, functionName: "protocolBps" }),
@@ -49,6 +50,7 @@ export default function FeesPage() {
         ]);
         let health = "keeper not reached";
         try {
+          if (!deployment!.keeperUrl) throw new Error("no keeper");
           const response = await fetch(`${deployment!.keeperUrl}/health`);
           if (response.ok) {
             const body = (await response.json()) as { ok: boolean; settlement: string; fills: number };
@@ -107,17 +109,18 @@ export default function FeesPage() {
       <Card>
         <CardHeader>
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <CardTitle>Arc fees</CardTitle>
+            <CardTitle>Maker rebates in USDC</CardTitle>
             <Badge variant="outline">USDC, 6 decimals on the ERC-20 interface</Badge>
           </div>
           <p className="max-w-2xl text-[13px] leading-relaxed text-[#5D5D66]">
-            Circle CCTP V2 can burn USDC on Unichain Sepolia (domain 10) and mint it on Arc testnet (domain 26). The local Unichain fork
-            cannot get an Iris attestation, so this demo credits FeeShareTreasury directly and labels that credit as an attestor. Native Arc
-            gas is 18-decimal USDC. Claims use the ERC-20 interface at <span className="font-mono">{addresses.arcUsdc}</span>.
+            The maker&apos;s spread on each fill stays in the maker wallet as the output token. On top of that, a protocol-funded rebate
+            program pays USDC per attested fill into FeeShareTreasury. Circle CCTP V2 can carry that USDC from Unichain Sepolia (domain 10)
+            to Arc testnet (domain 26). The local fork cannot get an Iris attestation, so here the keeper credits the treasury directly and
+            the path is labelled attestor. Claims use the 6-decimal ERC-20 interface at <span className="font-mono">{addresses.arcUsdc}</span> on Arc.
           </p>
         </CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-3">
-          <Stat label="Claimable USDC" value={loading ? "Reading…" : claimable === null ? "No treasury yet" : formatUnits(claimable, 6)} />
+          <Stat label="Claimable USDC rebate" value={loading ? "Reading…" : claimable === null ? "No treasury yet" : formatUnits(claimable, 6)} />
           <Stat label="Protocol split" value={split === null ? "0 bps until the owner sets one" : `${split} bps`} />
           <Stat label="Settlement" value={deployment ? `${deployment.settlement}. ${keeper || ""}` : "Not deployed"} />
         </CardContent>

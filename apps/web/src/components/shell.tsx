@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useAccount, useConnect, useDisconnect } from "wagmi";
 
 import { Button } from "@/components/ui/button";
-import { networkMode } from "@/lib/chains";
+import { networkLabel, networkMode } from "@/lib/chains";
 import { cn } from "@/lib/utils";
 
 const links = [
@@ -31,7 +31,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
               WalletDesk
             </Link>
             <span className="rounded-full bg-[#00BBFF]/15 px-2 py-0.5 text-[11px] font-medium text-[#0B6E99]">
-              {networkMode === "sepolia" ? "Unichain Sepolia" : "Unichain fork"}
+              {networkLabel[networkMode]}
             </span>
           </div>
           <nav className="hidden items-center gap-1 sm:flex">
@@ -77,6 +77,13 @@ export function Shell({ children }: { children: React.ReactNode }) {
         </nav>
       </header>
       <main className="mx-auto max-w-6xl px-4 py-8 md:px-6 md:py-12">{children}</main>
+      <footer className="border-t border-black/8">
+        <div className="mx-auto flex max-w-6xl flex-wrap gap-x-4 gap-y-1 px-4 py-4 text-[12px] text-[#5D5D66] md:px-6">
+          <span>Powered by SwapVM — © Degensoft Ltd 2025</span>
+          <span>Powered by Aqua — © Degensoft Ltd 2025</span>
+          <span>Uniswap v4 hook · Chainlink CRE reference price</span>
+        </div>
+      </footer>
     </div>
   );
 }

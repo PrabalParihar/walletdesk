@@ -8,15 +8,20 @@ export type Deployment = {
   swapVm: `0x${string}`;
   hook: `0x${string}`;
   overflowRouter: `0x${string}`;
+  stockRouter?: `0x${string}`;
+  priceFeed?: `0x${string}`;
   orderBuilder: `0x${string}`;
   token0: `0x${string}`;
   token1: `0x${string}`;
   symbol0: string;
   symbol1: string;
+  decimals0: number;
+  decimals1: number;
   fee: number;
   tickSpacing: number;
-  treasury: `0x${string}`;
-  usdc: `0x${string}`;
+  maxDeviationBps: number;
+  treasury?: `0x${string}`;
+  usdc?: `0x${string}`;
   maker: `0x${string}`;
   taker: `0x${string}`;
   deployBlock: number;
@@ -152,8 +157,15 @@ export const hookAbi = [
     inputs: [
       { name: "key", type: "tuple", components: poolComponents },
       { name: "order", type: "tuple", components: orderComponents },
-      { name: "inputCap", type: "uint256" },
+      { name: "maxDeviationBps", type: "uint16" },
     ],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "clearDesk",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "key", type: "tuple", components: poolComponents }],
     outputs: [],
   },
   {
@@ -173,17 +185,55 @@ export const hookAbi = [
   },
   {
     type: "function",
-    name: "strategyHash",
-    stateMutability: "view",
-    inputs: [{ name: "id", type: "bytes32" }],
-    outputs: [{ type: "bytes32" }],
-  },
-  {
-    type: "function",
     name: "poolInputCap",
     stateMutability: "view",
     inputs: [{ name: "id", type: "bytes32" }],
     outputs: [{ type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "deskCount",
+    stateMutability: "view",
+    inputs: [{ name: "id", type: "bytes32" }],
+    outputs: [{ type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "spotPriceX18",
+    stateMutability: "view",
+    inputs: [{ name: "id", type: "bytes32" }],
+    outputs: [{ type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "maxReferenceAge",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ type: "uint32" }],
+  },
+] as const;
+
+/** OverflowHook.SkipReason, in enum order. */
+export const skipReasons = [
+  "none",
+  "no quote",
+  "maker wallet unfunded",
+  "desk price too far from the pool spot",
+  "Chainlink CRE reference missing or stale",
+  "desk price too far from the CRE reference",
+  "SwapVM fill reverted",
+] as const;
+
+export const feedAbi = [
+  {
+    type: "function",
+    name: "referenceOf",
+    stateMutability: "view",
+    inputs: [{ name: "poolId", type: "bytes32" }],
+    outputs: [
+      { name: "priceX18", type: "uint256" },
+      { name: "updatedAt", type: "uint64" },
+    ],
   },
 ] as const;
 
@@ -200,6 +250,37 @@ export const routerAbi = [
       { name: "recipient", type: "address" },
     ],
     outputs: [{ name: "amountOut", type: "uint256" }],
+  },
+] as const;
+
+/** Uniswap v4-core PoolSwapTest: a stock router that settles the input after the swap. */
+export const stockRouterAbi = [
+  {
+    type: "function",
+    name: "swap",
+    stateMutability: "payable",
+    inputs: [
+      { name: "key", type: "tuple", components: poolComponents },
+      {
+        name: "params",
+        type: "tuple",
+        components: [
+          { name: "zeroForOne", type: "bool" },
+          { name: "amountSpecified", type: "int256" },
+          { name: "sqrtPriceLimitX96", type: "uint160" },
+        ],
+      },
+      {
+        name: "testSettings",
+        type: "tuple",
+        components: [
+          { name: "takeClaims", type: "bool" },
+          { name: "settleUsingBurn", type: "bool" },
+        ],
+      },
+      { name: "hookData", type: "bytes" },
+    ],
+    outputs: [{ name: "delta", type: "int256" }],
   },
 ] as const;
 
@@ -267,33 +348,45 @@ export function parseDeployment(raw: unknown): Deployment {
     if (typeof item !== "number") throw new Error(`${key} is missing from the deployment file.`);
     return item;
   };
+  const optionalAddress = (key: string) => {
+    const item = value[key];
+    return typeof item === "string" && item.startsWith("0x") ? (item as `0x${string}`) : undefined;
+  };
+  const optionalNum = (key: string, fallback: number) => (typeof value[key] === "number" ? (value[key] as number) : fallback);
+  const optionalText = (key: string, fallback: string) =>
+    typeof value[key] === "string" && (value[key] as string).length > 0 ? (value[key] as string) : fallback;
   return {
     network: text("network"),
     chainId: num("chainId"),
     rpcUrl: text("rpcUrl"),
-    keeperUrl: text("keeperUrl"),
+    keeperUrl: optionalText("keeperUrl", ""),
     aqua: address("aqua"),
     poolManager: address("poolManager"),
     swapVm: address("swapVm"),
     hook: address("hook"),
     overflowRouter: address("overflowRouter"),
+    stockRouter: optionalAddress("stockRouter"),
+    priceFeed: optionalAddress("priceFeed"),
     orderBuilder: address("orderBuilder"),
     token0: address("token0"),
     token1: address("token1"),
     symbol0: text("symbol0"),
     symbol1: text("symbol1"),
+    decimals0: optionalNum("decimals0", 18),
+    decimals1: optionalNum("decimals1", 18),
     fee: num("fee"),
     tickSpacing: num("tickSpacing"),
-    treasury: address("treasury"),
-    usdc: address("usdc"),
+    maxDeviationBps: optionalNum("maxDeviationBps", 100),
+    treasury: optionalAddress("treasury"),
+    usdc: optionalAddress("usdc"),
     maker: address("maker"),
-    taker: address("taker"),
-    deployBlock: num("deployBlock"),
+    taker: optionalAddress("taker") || "0x0000000000000000000000000000000000000000",
+    deployBlock: optionalNum("deployBlock", 0),
     poolId: address("poolId"),
-    poolCap: text("poolCap"),
-    shipAmount: text("shipAmount"),
-    exampleSwap: text("exampleSwap"),
-    strategyHash: address("strategyHash"),
+    poolCap: optionalText("poolCap", "1000000000000000000"),
+    shipAmount: optionalText("shipAmount", "1000000000000000000000"),
+    exampleSwap: optionalText("exampleSwap", "5000000000000000000"),
+    strategyHash: optionalAddress("strategyHash") || "0x0000000000000000000000000000000000000000000000000000000000000000",
     settlement: text("settlement"),
     arcChainId: typeof value.arcChainId === "number" ? value.arcChainId : undefined,
     arcTreasury: typeof value.arcTreasury === "string" && value.arcTreasury.startsWith("0x")

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createPublicClient, formatUnits, http } from "viem";
+import { createPublicClient, formatUnits, http, parseUnits } from "viem";
 import { useAccount, useChainId, usePublicClient, useSwitchChain, useWriteContract } from "wagmi";
 
 import { Notice } from "@/components/notice";
@@ -10,8 +10,19 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { aquaAbi, erc20Abi, hookAbi, poolKey, routerAbi, shortError, type Deployment } from "@/lib/contracts";
-import { parseUnits18 } from "@/lib/desk";
+import {
+  aquaAbi,
+  erc20Abi,
+  feedAbi,
+  hookAbi,
+  poolKey,
+  routerAbi,
+  shortError,
+  skipReasons,
+  stockRouterAbi,
+  type Deployment,
+} from "@/lib/contracts";
+import { formatPriceX18 } from "@/lib/desk";
 import { useDeployment } from "@/lib/use-deployment";
 
 type Fill = {
@@ -33,7 +44,21 @@ type KeeperFill = {
   creditNote?: string;
 };
 
-type Balances = { wallet0: bigint; wallet1: bigint; virtual0: bigint; virtual1: bigint };
+type KeeperSkip = { txHash: string; maker: string; reason: number; blockNumber: number };
+
+type Balances = { wallet0: bigint; wallet1: bigint; virtual0: bigint | null; virtual1: bigint | null };
+
+type Guard = {
+  spotX18: bigint;
+  referenceX18: bigint | null;
+  referenceAge: number | null;
+  maxReferenceAge: number;
+  deskCount: bigint;
+  cap: bigint;
+};
+
+const ZERO_HASH = "0x0000000000000000000000000000000000000000000000000000000000000000";
+const MIN_SQRT_PRICE_PLUS_ONE = 4295128740n;
 
 export default function LivePage() {
   const state = useDeployment();
@@ -43,9 +68,12 @@ export default function LivePage() {
   const walletClient = usePublicClient();
   const { writeContractAsync } = useWriteContract();
   const [swapSize, setSwapSize] = useState("5");
+  const [route, setRoute] = useState<"overflow" | "stock">("overflow");
   const [fill, setFill] = useState<Fill | null>(null);
   const [balances, setBalances] = useState<Balances | null>(null);
+  const [guard, setGuard] = useState<Guard | null>(null);
   const [keeper, setKeeper] = useState<KeeperFill[]>([]);
+  const [skips, setSkips] = useState<KeeperSkip[]>([]);
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -68,30 +96,60 @@ export default function LivePage() {
           args: [current.poolId],
         });
         const [maker, , , residualIn, filledOut, feeOut, fillId] = last;
-        const [wallet0, wallet1, virtual] = await Promise.all([
+        const [wallet0, wallet1, spotX18, deskCount, cap, maxReferenceAge] = await Promise.all([
           client.readContract({ address: current.token0, abi: erc20Abi, functionName: "balanceOf", args: [current.maker] }),
           client.readContract({ address: current.token1, abi: erc20Abi, functionName: "balanceOf", args: [current.maker] }),
-          client.readContract({
-            address: current.aqua,
-            abi: aquaAbi,
-            functionName: "safeBalances",
-            args: [current.maker, current.swapVm, current.strategyHash, current.token0, current.token1],
-          }),
+          client.readContract({ address: current.hook, abi: hookAbi, functionName: "spotPriceX18", args: [current.poolId] }),
+          client.readContract({ address: current.hook, abi: hookAbi, functionName: "deskCount", args: [current.poolId] }),
+          client.readContract({ address: current.hook, abi: hookAbi, functionName: "poolInputCap", args: [current.poolId] }),
+          client.readContract({ address: current.hook, abi: hookAbi, functionName: "maxReferenceAge" }),
         ]);
-        let keeperFills: KeeperFill[] = [];
-        try {
-          const response = await fetch(`${current.keeperUrl}/fills`);
-          if (response.ok) {
-            const body = (await response.json()) as { fills: KeeperFill[] };
-            keeperFills = body.fills;
+        let virtual: readonly [bigint, bigint] | null = null;
+        if (current.strategyHash !== ZERO_HASH) {
+          try {
+            virtual = await client.readContract({
+              address: current.aqua,
+              abi: aquaAbi,
+              functionName: "safeBalances",
+              args: [current.maker, current.swapVm, current.strategyHash, current.token0, current.token1],
+            });
+          } catch {
+            virtual = null;
           }
-        } catch {
-          keeperFills = [];
+        }
+        let referenceX18: bigint | null = null;
+        let referenceAge: number | null = null;
+        if (current.priceFeed) {
+          const [price, updatedAt] = await client.readContract({
+            address: current.priceFeed,
+            abi: feedAbi,
+            functionName: "referenceOf",
+            args: [current.poolId],
+          });
+          const block = await client.getBlock();
+          referenceX18 = price === 0n ? null : price;
+          referenceAge = updatedAt === 0n ? null : Number(block.timestamp - updatedAt);
+        }
+        let keeperFills: KeeperFill[] = [];
+        let keeperSkips: KeeperSkip[] = [];
+        if (current.keeperUrl) {
+          try {
+            const [fillsResponse, skipsResponse] = await Promise.all([
+              fetch(`${current.keeperUrl}/fills`),
+              fetch(`${current.keeperUrl}/skips`),
+            ]);
+            if (fillsResponse.ok) keeperFills = ((await fillsResponse.json()) as { fills: KeeperFill[] }).fills;
+            if (skipsResponse.ok) keeperSkips = ((await skipsResponse.json()) as { skips: KeeperSkip[] }).skips;
+          } catch {
+            keeperFills = [];
+          }
         }
         if (!cancelled) {
           setFill(maker === "0x0000000000000000000000000000000000000000" ? null : { maker, residualIn, filledOut, feeOut, fillId });
-          setBalances({ wallet0, wallet1, virtual0: virtual[0], virtual1: virtual[1] });
+          setBalances({ wallet0, wallet1, virtual0: virtual ? virtual[0] : null, virtual1: virtual ? virtual[1] : null });
+          setGuard({ spotX18, referenceX18, referenceAge, maxReferenceAge: Number(maxReferenceAge), deskCount, cap });
           setKeeper(keeperFills);
+          setSkips(keeperSkips);
           setError(null);
         }
       } catch (caught) {
@@ -113,11 +171,17 @@ export default function LivePage() {
       setError("Connect the taker wallet on the demo chain.");
       return;
     }
-    const amount = parseUnits18(swapSize);
+    let amount: bigint;
+    try {
+      amount = parseUnits(swapSize.trim(), deployment.decimals0);
+    } catch {
+      amount = 0n;
+    }
     if (amount === 0n) {
       setError("Enter a swap size.");
       return;
     }
+    const spender = route === "stock" && deployment.stockRouter ? deployment.stockRouter : deployment.overflowRouter;
     setBusy(true);
     setError(null);
     setSwapHash(null);
@@ -130,27 +194,44 @@ export default function LivePage() {
         address: deployment.token0,
         abi: erc20Abi,
         functionName: "allowance",
-        args: [address, deployment.overflowRouter],
+        args: [address, spender],
       });
       if (allowance < amount) {
-        setStatus("Approving the overflow router");
+        setStatus("Approving the router");
         const hash = await writeContractAsync({
           address: deployment.token0,
           abi: erc20Abi,
           functionName: "approve",
-          args: [deployment.overflowRouter, amount],
+          args: [spender, amount],
           chainId: deployment.chainId,
         });
         await walletClient.waitForTransactionReceipt({ hash });
       }
-      setStatus("Swapping through OverflowRouter");
-      const hash = await writeContractAsync({
-        address: deployment.overflowRouter,
-        abi: routerAbi,
-        functionName: "swapExactInput",
-        args: [poolKey(deployment), true, amount, 0n, address],
-        chainId: deployment.chainId,
-      });
+      let hash: `0x${string}`;
+      if (route === "stock" && deployment.stockRouter) {
+        setStatus("Swapping through Uniswap's PoolSwapTest router");
+        hash = await writeContractAsync({
+          address: deployment.stockRouter,
+          abi: stockRouterAbi,
+          functionName: "swap",
+          args: [
+            poolKey(deployment),
+            { zeroForOne: true, amountSpecified: -amount, sqrtPriceLimitX96: MIN_SQRT_PRICE_PLUS_ONE },
+            { takeClaims: false, settleUsingBurn: false },
+            "0x",
+          ],
+          chainId: deployment.chainId,
+        });
+      } else {
+        setStatus("Swapping through OverflowRouter");
+        hash = await writeContractAsync({
+          address: deployment.overflowRouter,
+          abi: routerAbi,
+          functionName: "swapExactInput",
+          args: [poolKey(deployment), true, amount, 0n, address],
+          chainId: deployment.chainId,
+        });
+      }
       await walletClient.waitForTransactionReceipt({ hash });
       setSwapHash(hash);
       setStatus(null);
@@ -162,47 +243,90 @@ export default function LivePage() {
     }
   }
 
+  const d0 = deployment?.decimals0 ?? 18;
+  const d1 = deployment?.decimals1 ?? 18;
+  const referenceFresh =
+    guard && guard.referenceAge !== null ? guard.referenceAge <= guard.maxReferenceAge : false;
+  const lastSkip = skips[0];
+
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_1fr]">
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Desk status</CardTitle>
-            <Badge className="bg-[#00BBFF] text-white">{loading ? "loading" : fill ? "live" : "empty"}</Badge>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-3 text-[13px]">
-          {state.status === "missing" ? (
-            <Notice tone="info">Run ./script/demo.sh to fork Unichain, ship a maker, and place an overflow fill on this page.</Notice>
-          ) : null}
-          {state.status === "error" ? <Notice tone="error">{state.error}</Notice> : null}
-          {deployment && balances ? (
-            <div className="overflow-hidden rounded-[10px] border border-black/8">
-              <table className="w-full text-left">
-                <thead className="bg-[#F2F2F3] text-[#5D5D66]">
-                  <tr>
-                    <th className="px-3 py-2 font-medium">Side</th>
-                    <th className="px-3 py-2 font-medium">Wallet</th>
-                    <th className="px-3 py-2 font-medium">Virtual</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <BalanceRow symbol={deployment.symbol0} wallet={balances.wallet0} virtual={balances.virtual0} />
-                  <BalanceRow symbol={deployment.symbol1} wallet={balances.wallet1} virtual={balances.virtual1} />
-                </tbody>
-              </table>
+      <div className="grid content-start gap-6">
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Desk status</CardTitle>
+              <Badge className="bg-[#00BBFF] text-white">{loading ? "loading" : fill ? "live" : "empty"}</Badge>
             </div>
-          ) : deployment && loading ? (
-            <p className="text-[#5D5D66]">Reading the fork…</p>
-          ) : null}
-          {error ? <Notice tone="error">{error}</Notice> : null}
-        </CardContent>
-      </Card>
+          </CardHeader>
+          <CardContent className="space-y-3 text-[13px]">
+            {state.status === "missing" ? (
+              <Notice tone="info">Run ./script/demo.sh to fork Unichain, ship a maker, and place an overflow fill on this page.</Notice>
+            ) : null}
+            {state.status === "error" ? <Notice tone="error">{state.error}</Notice> : null}
+            {deployment && balances ? (
+              <div className="overflow-hidden rounded-[10px] border border-black/8">
+                <table className="w-full text-left">
+                  <thead className="bg-[#F2F2F3] text-[#5D5D66]">
+                    <tr>
+                      <th className="px-3 py-2 font-medium">Side</th>
+                      <th className="px-3 py-2 font-medium">Wallet</th>
+                      <th className="px-3 py-2 font-medium">Virtual (Aqua)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <BalanceRow symbol={deployment.symbol0} wallet={balances.wallet0} virtual={balances.virtual0} decimals={d0} />
+                    <BalanceRow symbol={deployment.symbol1} wallet={balances.wallet1} virtual={balances.virtual1} decimals={d1} />
+                  </tbody>
+                </table>
+              </div>
+            ) : deployment && loading ? (
+              <p className="text-[#5D5D66]">Reading the chain…</p>
+            ) : null}
+            {error ? <Notice tone="error">{error}</Notice> : null}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Price guard</CardTitle>
+              <Badge variant={referenceFresh || !deployment?.priceFeed ? "secondary" : "outline"}>
+                {deployment?.priceFeed ? (referenceFresh ? "CRE reference fresh" : "CRE reference stale") : "spot only"}
+              </Badge>
+            </div>
+            <p className="text-[13px] text-[#5D5D66]">
+              A desk fills only when its quote is within the maker&apos;s limit ({deployment?.maxDeviationBps ?? 100} bps on the seeded desk) of both
+              the pool spot and the Chainlink CRE reference. Otherwise the pool takes the whole swap.
+            </p>
+          </CardHeader>
+          <CardContent className="overflow-hidden rounded-[10px] border border-black/8 p-0 text-[13px]">
+            <table className="w-full">
+              <tbody>
+                <Line label="Pool spot" value={guard ? formatPriceX18(guard.spotX18, d0, d1) : "…"} />
+                <Line
+                  label="CRE reference"
+                  value={
+                    !deployment?.priceFeed
+                      ? "no feed"
+                      : guard?.referenceX18
+                        ? `${formatPriceX18(guard.referenceX18, d0, d1)} (${guard.referenceAge}s old, max ${guard.maxReferenceAge}s)`
+                        : "none yet"
+                  }
+                />
+                <Line label="Desks on this pool" value={guard ? guard.deskCount.toString() : "…"} />
+                <Line label="Pool cap, input" value={guard ? formatUnits(guard.cap, d0) : "…"} />
+                <Line label="Last skip" value={lastSkip ? `${skipReasons[lastSkip.reason] ?? lastSkip.reason}` : "none"} />
+              </tbody>
+            </table>
+          </CardContent>
+        </Card>
+      </div>
       <Card className="shadow-[0_8px_30px_rgba(0,0,0,0.04)]">
         <CardHeader>
           <CardTitle>Overflow fill</CardTitle>
           <p className="text-[13px] text-[#5D5D66]">
-            The seeded swap is already on the fork. Run another one from the taker wallet. Amounts above the pool cap pull the maker shelf.
+            Amounts above the pool cap pull the best maker shelf. Any v4 router works: the hook advances the residual from PoolManager
+            reserves and the router settles it at the end of the unlock.
           </p>
         </CardHeader>
         <CardContent className="grid gap-4">
@@ -211,9 +335,9 @@ export default function LivePage() {
               <table className="w-full">
                 <tbody>
                   <Line label="Maker" value={fill.maker} />
-                  <Line label="Residual in" value={formatUnits(fill.residualIn, 18)} />
-                  <Line label="Shelf out (pulled)" value={formatUnits(fill.filledOut, 18)} />
-                  <Line label="Fee kept on the shelf" value={formatUnits(fill.feeOut, 18)} />
+                  <Line label="Residual in" value={formatUnits(fill.residualIn, d0)} />
+                  <Line label="Shelf out (pulled)" value={formatUnits(fill.filledOut, d1)} />
+                  <Line label="Maker spread (stays in wallet)" value={formatUnits(fill.feeOut, d1)} />
                   <Line label="Fill id" value={fill.fillId} />
                 </tbody>
               </table>
@@ -225,18 +349,35 @@ export default function LivePage() {
           )}
           {keeper[0] ? (
             <div className="space-y-2 text-[13px]">
-              <p className="text-[#5D5D66]">Keeper transfers</p>
+              <p className="text-[#5D5D66]">Keeper: Aqua transfers in the last fill</p>
               <p className="break-all font-mono text-xs">{keeper[0].txHash}</p>
               {keeper[0].transfers.map((transfer, index) => (
                 <p key={`${transfer.event}-${index}`}>
                   {transfer.event} {formatUnits(BigInt(transfer.amount), 18)}
                 </p>
               ))}
-              <p>{keeper[0].credited ? "Fee credited on the local treasury." : keeper[0].creditNote || "Credit pending."}</p>
+              <p>{keeper[0].credited ? "USDC rebate credited on the treasury." : keeper[0].creditNote || "Rebate pending."}</p>
             </div>
           ) : null}
           <div className="grid gap-1.5">
-            <Label>Swap size, input units</Label>
+            <Label>Router</Label>
+            <div className="flex flex-wrap gap-2">
+              <Button type="button" size="sm" variant={route === "overflow" ? "default" : "outline"} onClick={() => setRoute("overflow")}>
+                OverflowRouter
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={route === "stock" ? "default" : "outline"}
+                disabled={!deployment?.stockRouter}
+                onClick={() => setRoute("stock")}
+              >
+                Uniswap PoolSwapTest
+              </Button>
+            </div>
+          </div>
+          <div className="grid gap-1.5">
+            <Label>Swap size, {deployment?.symbol0 ?? "input"} in</Label>
             <Input value={swapSize} onChange={(event) => setSwapSize(event.target.value)} />
           </div>
           {status ? <Notice tone="info">{status}…</Notice> : null}
@@ -250,12 +391,22 @@ export default function LivePage() {
   );
 }
 
-function BalanceRow({ symbol, wallet, virtual }: { symbol: string; wallet: bigint; virtual: bigint }) {
+function BalanceRow({
+  symbol,
+  wallet,
+  virtual,
+  decimals,
+}: {
+  symbol: string;
+  wallet: bigint;
+  virtual: bigint | null;
+  decimals: number;
+}) {
   return (
     <tr className="border-t border-black/8">
       <td className="px-3 py-2">{symbol}</td>
-      <td className="px-3 py-2 font-mono">{formatUnits(wallet, 18)}</td>
-      <td className="px-3 py-2 font-mono">{formatUnits(virtual, 18)}</td>
+      <td className="px-3 py-2 font-mono">{formatUnits(wallet, decimals)}</td>
+      <td className="px-3 py-2 font-mono">{virtual === null ? "not shipped" : formatUnits(virtual, decimals)}</td>
     </tr>
   );
 }
