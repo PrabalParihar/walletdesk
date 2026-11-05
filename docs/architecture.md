@@ -25,12 +25,16 @@ flowchart LR
 
   subgraph arc [Arc testnet]
     Treasury[FeeShareTreasury]
-    Attestor[Attestor]
-    Attestor -->|creditFromFill USDC 6 decimals| Treasury
+    CCTP[CCTP V2 mint]
+    Attestor[Fork attestor]
+    CCTP -->|USDC 6 decimals| Treasury
+    Attestor -->|creditFromFill on a local fork| Treasury
     Maker -->|claim| Treasury
   end
 
-  Hook -.->|fill id and fee, offchain| Attestor
+  Hook -.->|fill id| Bridge[CctpFeeBridge on Unichain Sepolia]
+  Bridge -->|depositForBurnWithHook domain 26| CCTP
+  Hook -.->|fork only, no Iris attestation| Attestor
 ```
 
 ## What moves in one transaction
@@ -45,4 +49,6 @@ flowchart LR
 
 ## Arc
 
-`FeeShareTreasury` accounts only in the 6-decimal ERC-20 USDC interface. Native Arc USDC is 18 decimals and is rejected if sent as value. CCTP is not implemented. A demo attestor copies a fill id from the hook and calls `creditFromFill`.
+`FeeShareTreasury` accounts only in the 6-decimal ERC-20 USDC interface. Native Arc USDC is 18 decimals and is rejected if sent as value.
+
+On Unichain Sepolia, `CctpFeeBridge` burns that USDC through Circle CCTP V2 toward Arc domain 26. Iris will not attest an anvil fork, so the local demo calls `creditFromFill` and the UI labels it `attestor`. Details and the addresses checked on 5 Nov 2026 are in `docs/CCTP.md`.

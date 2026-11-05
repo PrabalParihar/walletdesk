@@ -5,3 +5,5 @@ Same list as `AI.md`. ETHGlobal's checklist asks for `AI.md`. This file is the s
 A Cursor cloud agent (Grok 4.7) wrote the WalletDesk contracts, tests, deploy scripts, web shell, and docs. Upstream libraries under `contracts/lib/` were vendored unmodified: Uniswap v4-core and v4-periphery, OpenZeppelin uniswap-hooks, forge-std, 1inch/aqua, 1inch/swap-vm v1.0.2, and 1inch/solidity-utils 6.9.7.
 
 The custom SwapVM surface is `contracts/src/swapvm/`. `SwapVM.sol` itself was not edited. `WalletDeskRouter` only overrides the opcode table.
+
+The same agent later wired the maker UI to a local Unichain fork, added `CctpFeeBridge`, the keeper, the demo script, and the submission notes. The file list in `AI.md` is the full set.

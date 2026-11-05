@@ -36,6 +36,7 @@
   <text x="804" y="210" font-family="Inter, Arial, sans-serif" font-size="13" fill="#18181B">FeeShareTreasury</text>
   <text x="804" y="230" font-family="Inter, Arial, sans-serif" font-size="11" fill="#5D5D66">USDC ERC-20, 6 decimals</text>
   <rect x="784" y="300" width="256" height="64" rx="10" fill="#ffffff" stroke="rgba(0,0,0,0.12)"/>
-  <text x="804" y="336" font-family="Inter, Arial, sans-serif" font-size="13" fill="#18181B">Attestor credits a fill id</text>
+  <text x="804" y="328" font-family="Inter, Arial, sans-serif" font-size="13" fill="#18181B">CCTP mint, or fork attestor</text>
+  <text x="804" y="346" font-family="Inter, Arial, sans-serif" font-size="11" fill="#5D5D66">then claim 6-decimal USDC</text>
   <text x="776" y="460" font-family="Inter, Arial, sans-serif" font-size="12" fill="#5D5D66">Aqua is not deployed on Arc.</text>
 </svg>

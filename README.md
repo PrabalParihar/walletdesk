@@ -8,7 +8,7 @@ ETHGlobal Mumbai. Partner picks: 1inch Aqua, Uniswap, Arc DeFi.
 
 ## What is working
 
-Local Foundry tests (15) and the Unichain mainnet fork tests (5) pass, including a fill that checks real ERC-20 balances:
+Local Foundry tests and the Unichain mainnet fork tests pass, including a fill that checks real ERC-20 balances. The original 15 local tests and 5 fork tests are still there. Newer tests cover the CCTP bridge, a custom price band, and the reason the pool spot is not the desk quote.
 
 - `ship` emits the Aqua bookkeeping events and does not change the maker's token balance.
 - `quote` and `swap` on DeskBand return the same output. A worked example with equal shelves and a 0.99 to 1.01 band quotes `3.988` tokens out on `4` tokens in at 30 bps.
@@ -29,25 +29,46 @@ That forks `https://mainnet.unichain.org` (chain id 130), uses the live PoolMana
 forge test --no-match-contract OverflowForkTest
 ```
 
-## What is stubbed
+## Demo
 
-- No Arc Studio project URL yet. Paste `arc/FeeShareTreasury.sol` into https://studio.arc.io and deploy it there. The contract is the same file as `contracts/src/FeeShareTreasury.sol`.
-- No Unichain Sepolia or Arc broadcast has been sent. Scripts are env-driven and refuse to run without `PRIVATE_KEY`. Nothing in git is a key.
-- The web app is a maker shell: it packs the DeskBand program, stores it in the browser, and previews the split with the same integer math. Approve, ship, and claim are not wired to a deployed desk. Connect uses an injected wallet only.
-- `UniV4OracleAdapter` quotes the pool spot and is tested for quote/swap agreement. The default program does not call it.
-- CCTP from the desk chain onto Arc is not implemented. The attestor calls `creditFromFill`.
+One command, from the repo root. It forks Unichain mainnet, deploys the desk, ships a maker, runs the overflow swap, credits the local treasury, and serves the UI. It refuses any RPC that is not loopback. It does not print private keys.
+
+```bash
+./script/demo.sh
+```
+
+Then open http://127.0.0.1:43127/live. The seeded fill is already on the fork. Keeper: http://127.0.0.1:8787/health. The beat-by-beat script is `docs/WALKTHROUGH.md`.
+
+To click Approve, Ship, Run overflow, or Claim, import the Anvil maker and taker printed by the script. Their keys are in the Anvil log the script names. They are Foundry's public development accounts. Do not use them on a public network.
+
+Switch the UI to Unichain Sepolia without a fork:
+
+```bash
+# apps/web/.env.local
+NEXT_PUBLIC_NETWORK=sepolia
+NEXT_PUBLIC_RPC_URL=https://sepolia.unichain.org
+```
+
+Fill the contract addresses after you broadcast. See `apps/web/.env.example`.
+
+## What is left for you
+
+- No Arc Studio project URL yet. Paste steps are in `arc/README.md`. The source matches `contracts/src/FeeShareTreasury.sol`.
+- No Unichain Sepolia or Arc broadcast has been sent. Scripts are env-driven. Add `--broadcast` yourself. Nothing in git is a key.
+- `UniV4OracleAdapter` is not in the default program. `docs/ORACLE.md` says why. A test locks the quote difference.
+- CCTP V2 from Unichain Sepolia to Arc testnet is implemented in `CctpFeeBridge` and `services/keeper/cctp-settle.mjs`. The local fork still uses `creditFromFill`, because Iris does not attest anvil state. See `docs/CCTP.md`.
 - Canonical `AquaSwapVMRouter` `0x111111338c5091E8440b67B168bAe16a668AC0De` is not the router the hook calls. It has no DeskBand opcode. See `docs/SWAPVM_DIFF.md`.
 
 ## Uniswap integration
 
 | What | Where |
 | --- | --- |
-| Permissions: `beforeSwap` and `beforeSwapReturnDelta` | `contracts/src/OverflowHook.sol:133` |
-| Cap, no-op, and `WouldRoute` | `contracts/src/OverflowHook.sol:164` |
-| Aqua swap, settle, and `BeforeSwapDelta` | `contracts/src/OverflowHook.sol:189` |
-| `OverflowRouted` | `contracts/src/OverflowHook.sol:230` |
+| Permissions: `beforeSwap` and `beforeSwapReturnDelta` | `contracts/src/OverflowHook.sol:137` |
+| Cap, no-op, and `WouldRoute` | `contracts/src/OverflowHook.sol:179` |
+| Aqua swap, settle, and `BeforeSwapDelta` | `contracts/src/OverflowHook.sol:193` |
+| `OverflowRouted` | `contracts/src/OverflowHook.sol:234` |
 | Taker entry: prefund, `PoolManager.swap`, take output | `contracts/src/OverflowRouter.sol:43` |
-| Pool spot Extruction target | `contracts/src/UniV4OracleAdapter.sol:51` |
+| Pool spot Extruction target (not the default quote) | `contracts/src/UniV4OracleAdapter.sol:52` |
 | Fork test against PoolManager `0x1F98400000000000000000000000000000000004` | `contracts/test/Overflow.t.sol` (`OverflowForkTest`) |
 
 The hook follows `BaseHook` from OpenZeppelin `uniswap-hooks`, which is the current v4-template pattern.
@@ -68,7 +89,7 @@ Registry used on the fork: `0x1111113CCf1426A8E30e2bfF5E005d929bF6a90a`. Checked
 
 ## Arc
 
-`contracts/src/FeeShareTreasury.sol:81` credits a fill. `contracts/src/FeeShareTreasury.sol:103` pays the claim. Native 18-decimal value is rejected. `claimableNativeUnits` multiplies the 6-decimal balance by `1e12` for display only.
+`contracts/src/FeeShareTreasury.sol:84` credits a fill. `contracts/src/FeeShareTreasury.sol:106` pays the claim. Native 18-decimal value is rejected. `claimableNativeUnits` multiplies the 6-decimal balance by `1e12` for display only. `contracts/src/CctpFeeBridge.sol` burns USDC toward Arc domain 26. The fork demo does not call it.
 
 Deploy, from `contracts/`, after exporting `PRIVATE_KEY` and `ATTESTOR`:
 
@@ -81,7 +102,7 @@ forge script script/DeployArcTreasury.s.sol \
 
 ## Unichain Sepolia
 
-Two PoolManager addresses have code on chain 1301 and their runtime codehashes differ. hookmate returns `0x00B036B58a818B1BC34d502D3fE730Db729e62AC`. Another docs page has been cited as `0x9cB26A7183B2F4515945Dc52CB4195B0d2D06C95`. The script requires `POOL_MANAGER` and does not default.
+The canonical PoolManager is `0x00B036B58a818B1BC34d502D3fE730Db729e62AC`. That is the only PoolManager on the Uniswap v4 deployments page and on the Unichain contract-address page (checked 5 Nov 2026). The same address is what hookmate returns. On `https://sepolia.unichain.org` it has code size 24009 and runtime codehash `0x7c5e10e0bd8580e13b48751e4cd7db6315577488d0f76b20bc6c8bcbe2646dc0`. `0x9cB26A7183B2F4515945Dc52CB4195B0d2D06C95` also has code, size 24009, and a different codehash `0x2566e42d45723eef05d7253a7b7c140a6da61992594525fc66d06b4a973b5d0b`. It is not on the deployments page. The script defaults to the canonical address. Set `POOL_MANAGER` only if you mean the other one. The Sepolia explorer HTML sits behind a bot check, so the check above is the RPC code read plus the docs pages.
 
 ```bash
 forge script script/DeployUnichainSepolia.s.sol \
@@ -100,7 +121,7 @@ npm install
 npm run dev
 ```
 
-Serves http://127.0.0.1:43127. Screens: landing, ship, live overflow preview, Arc fees, docs.
+`./script/demo.sh` starts this for you on http://127.0.0.1:43127. Screens: landing, ship (approve and ship), live fill, Arc fees (claim), docs. The keeper in `services/keeper` indexes `FeeAccrued` and Aqua `Pulled` / `Pushed`, and on a loopback RPC it credits the local treasury.
 
 ## Layout
 
@@ -118,8 +139,8 @@ docs/          Architecture diagram and the SwapVM diff.
 - The hook only pulls a maker when `msg.sender` of `PoolManager.swap` is the configured `OverflowRouter`. A generic swap router will not prefund the residual, so the hook refuses it.
 - DeskBand programs are not portable to the canonical Aqua router, and canonical programs are not portable here.
 - Fork tests need a public Unichain RPC. If it is down, run the offline command above.
-- Sepolia deploy is unsafe until you re-check which PoolManager you want.
-- Arc Studio, a claim transaction, and CCTP are still open.
+- Sepolia deploy uses the canonical PoolManager above. Override `POOL_MANAGER` if you have a reason to use the other contract.
+- Arc Studio URL, a broadcast claim transaction, and an Iris-attested CCTP mint still need your key. The contracts and the settler script are in the repo. `docs/CCTP.md` says why the fork cannot finish CCTP.
 - Aqua v1 is aimed at EOA makers. The tests use an EOA-style `vm.prank` maker.
 
 ## License
