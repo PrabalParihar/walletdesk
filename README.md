@@ -1,148 +1,170 @@
 # WalletDesk
 
-Turn idle tokens in your wallet into a Uniswap market. Fees settle as USDC on Arc.
+Turn idle tokens in your wallet into a Uniswap market, without depositing them.
 
-A maker ships a custom SwapVM strategy on 1inch Aqua. The tokens stay in the wallet. When a Uniswap v4 swap is larger than the pool cap, `OverflowHook` fills the pool leg from the pool and the residual from that wallet in one transaction. Maker fees are credited later as USDC on Arc.
+A maker ships a custom SwapVM strategy (DeskBand) on 1inch Aqua. The tokens stay in the wallet. When a Uniswap v4
+swap is larger than the pool cap, `OverflowHook` lets the pool fill the cap and fills the residual from the best
+maker desk in the same transaction, through any v4 router. Every fill is checked against the pool spot and a
+Chainlink CRE reference price, so a stale band is skipped instead of picked off.
 
-ETHGlobal Mumbai. Partner picks: 1inch Aqua, Uniswap, Arc DeFi.
+ETHGlobal Mumbai. Partner picks: **1inch Aqua, Uniswap, Chainlink CRE**. Arc is optional (see `SUBMISSION.md`).
+
+Powered by SwapVM — © Degensoft Ltd 2025 · Powered by Aqua — © Degensoft Ltd 2025
 
 ## What is working
 
-Local Foundry tests and the Unichain mainnet fork tests pass, including a fill that checks real ERC-20 balances. The original 15 local tests and 5 fork tests are still there. Newer tests cover the CCTP bridge, a custom price band, and the reason the pool spot is not the desk quote.
+| Check | Result |
+| --- | --- |
+| Local Foundry suite | 38 tests pass: `forge test --no-match-contract OverflowForkTest` |
+| Same hook suite on a Unichain mainnet fork, live PoolManager `0x1F98…0004` and live Aqua `0x1111113C…a90a` | 20 tests pass: `forge test --match-contract OverflowForkTest` |
+| `DemoSeed` broadcast on a local fork | Ship, register, fill through `OverflowRouter`, fill through Uniswap's stock `PoolSwapTest` router, USDC rebate. `ONCHAIN EXECUTION COMPLETE & SUCCESSFUL` |
+| `DeployUnichainMainnet` rehearsed on the fork | Deploys against the live contracts; refuses without `CONFIRM_MAINNET=true` |
+| Keeper on the fork | Indexes fills (Aqua `Pulled` / `Pushed`) and skip reasons; posts a live USDT/USD reference (median of Coinbase and Kraken) |
+| Chainlink CRE workflow | `cre workflow build`, `tsc` and 16 SDK tests pass. `cre workflow simulate` needs a CRE login: see `docs/CRE.md` |
+| Web | `npm run lint` and `npm run build` pass |
 
-- `ship` emits the Aqua bookkeeping events and does not change the maker's token balance.
-- `quote` and `swap` on DeskBand return the same output. A worked example with equal shelves and a 0.99 to 1.01 band quotes `3.988` tokens out on `4` tokens in at 30 bps.
-- A 5 token exact-input swap with a pool cap of 1 pulls `3.988` of the output token from the maker and pushes `4` of the input token back. The taker receives more than the shelf alone, so the pool filled the other leg.
-- Swaps inside the cap do not touch the maker. Callers other than `OverflowRouter` emit `WouldRoute` and do not pull.
-- Reentrancy into `beforeSwap` reverts.
-- `FeeShareTreasury` deposit, split, claim, and the native-value reject are covered. Arc USDC at `0x3600000000000000000000000000000000000000` was read on testnet: symbol USDC, 6 decimals.
+Worked numbers (equal shelves, 0.99–1.01 band, 30 bps): 5 in with a pool cap of 1 pulls `3.988` of the output token
+from the maker and pushes `4` of the input back. The pool fills the other 1.
 
-Fork command, from `contracts/`:
+## How it works
 
-```bash
-forge test --match-contract OverflowForkTest -vv
-```
-
-That forks `https://mainnet.unichain.org` (chain id 130), uses the live PoolManager and the live Aqua registry, deploys WalletDeskRouter and OverflowHook, and asserts the transfers above. Offline:
-
-```bash
-forge test --no-match-contract OverflowForkTest
-```
-
-## Demo
-
-One command, from the repo root. It forks Unichain mainnet, deploys the desk, ships a maker, runs the overflow swap, credits the local treasury, and serves the UI. It refuses any RPC that is not loopback. It does not print private keys.
-
-```bash
-./script/demo.sh
-```
-
-Then open http://127.0.0.1:43127/live. The seeded fill is already on the fork. Keeper: http://127.0.0.1:8787/health. The beat-by-beat script is `docs/WALKTHROUGH.md`.
-
-To click Approve, Ship, Run overflow, or Claim, import the Anvil maker and taker printed by the script. Their keys are in the Anvil log the script names. They are Foundry's public development accounts. Do not use them on a public network.
-
-Switch the UI to Unichain Sepolia without a fork:
-
-```bash
-# apps/web/.env.local
-NEXT_PUBLIC_NETWORK=sepolia
-NEXT_PUBLIC_RPC_URL=https://sepolia.unichain.org
-```
-
-Fill the contract addresses after you broadcast. See `apps/web/.env.example`.
-
-## What is left for you
-
-- No Arc Studio project URL yet. Paste steps are in `arc/README.md`. The source matches `contracts/src/FeeShareTreasury.sol`.
-- No Unichain Sepolia or Arc broadcast has been sent. Scripts are env-driven. Add `--broadcast` yourself. Nothing in git is a key.
-- `UniV4OracleAdapter` is not in the default program. `docs/ORACLE.md` says why. A test locks the quote difference.
-- CCTP V2 from Unichain Sepolia to Arc testnet is implemented in `CctpFeeBridge` and `services/keeper/cctp-settle.mjs`. The local fork still uses `creditFromFill`, because Iris does not attest anvil state. See `docs/CCTP.md`.
-- Canonical `AquaSwapVMRouter` `0x111111338c5091E8440b67B168bAe16a668AC0De` is not the router the hook calls. It has no DeskBand opcode. See `docs/SWAPVM_DIFF.md`.
+1. **Ship.** The maker approves Aqua and ships a DeskBand order. Aqua records virtual balances; nothing moves.
+2. **Register.** `OverflowHook.registerDesk` checks the order was really shipped, rejects maker-hook traits, and
+   stores the maker's `maxDeviationBps`. Up to 8 desks per pool, one per maker. A full table evicts the desk with
+   the least *deliverable* inventory (min of shipped, wallet balance, Aqua allowance).
+3. **Swap through any v4 router.** If the exact input exceeds the pool cap, the hook quotes every desk, drops any
+   desk outside its deviation limit from the pool spot or from the CRE reference, or whose wallet cannot pay, and
+   takes the best quote.
+4. **Fill.** The hook advances the residual from PoolManager reserves, pays it to the maker through the modified
+   SwapVM (Aqua `pull` / `push`), settles the maker's output, and returns a `BeforeSwapDelta` that charges the
+   caller. The router settles at the end of the unlock or the whole transaction reverts.
+5. **Never block a swap.** A failed SwapVM call is caught, the residual is handed back, and the pool fills
+   everything. Every skip emits `DeskSkipped(reason)`.
 
 ## Uniswap integration
 
 | What | Where |
 | --- | --- |
-| Permissions: `beforeSwap` and `beforeSwapReturnDelta` | `contracts/src/OverflowHook.sol:137` |
-| Cap, no-op, and `WouldRoute` | `contracts/src/OverflowHook.sol:179` |
-| Aqua swap, settle, and `BeforeSwapDelta` | `contracts/src/OverflowHook.sol:193` |
-| `OverflowRouted` | `contracts/src/OverflowHook.sol:234` |
-| Taker entry: prefund, `PoolManager.swap`, take output | `contracts/src/OverflowRouter.sol:43` |
-| Pool spot Extruction target (not the default quote) | `contracts/src/UniV4OracleAdapter.sol:52` |
-| Fork test against PoolManager `0x1F98400000000000000000000000000000000004` | `contracts/test/Overflow.t.sol` (`OverflowForkTest`) |
+| Permissions: `beforeSwap` and `beforeSwapReturnDelta` | `contracts/src/OverflowHook.sol:270` |
+| Cap, residual, PoolManager reserve check, `WouldRoute` | `contracts/src/OverflowHook.sol:301` (reserves `:322`) |
+| Best desk and guards (spot, CRE reference, funded wallet) | `contracts/src/OverflowHook.sol:344`, `:364` |
+| Advance the residual from reserves (`take`) | `contracts/src/OverflowHook.sol:388` |
+| Failed fill: refund with `sync` / `settle`, zero delta | `contracts/src/OverflowHook.sol:393` |
+| Returned `BeforeSwapDelta` that charges the caller | `contracts/src/OverflowHook.sol:428` |
+| Pool spot from `slot0` in the v4 price unit | `contracts/src/OverflowHook.sol:263` |
+| Optional taker entry with slippage check | `contracts/src/OverflowRouter.sol:43` |
+| Stock `PoolSwapTest` router filled from a desk | `contracts/test/Overflow.t.sol` (`test_stockV4RouterFillsFromDesk`), `contracts/script/DemoSeed.s.sol` |
+| Fork tests against PoolManager `0x1F98400000000000000000000000000000000004` | `contracts/test/Overflow.t.sol` (`OverflowForkTest`) |
 
-The hook follows `BaseHook` from OpenZeppelin `uniswap-hooks`, which is the current v4-template pattern.
+The hook follows `BaseHook` from OpenZeppelin `uniswap-hooks`. Feedback for the Uniswap team: `FEEDBACK.md`.
 
-## Aqua integration
+## 1inch Aqua / SwapVM integration
 
 | What | Where |
 | --- | --- |
-| DeskBand opcode (not XYCConcentrate) | `contracts/src/swapvm/DeskBand.sol:17` |
-| Opcode table on the modified router | `contracts/src/swapvm/WalletDeskRouter.sol:52` |
-| Preview uses the same math as the opcode | `contracts/src/swapvm/WalletDeskRouter.sol:28` |
-| Program bytes | `contracts/src/swapvm/DeskBandProgram.sol` |
-| Unmodified `Aqua.push` | `contracts/lib/swap-vm/src/SwapVM.sol:237` |
-| Unmodified `Aqua.pull` | `contracts/lib/swap-vm/src/SwapVM.sol:286` |
-| Ship does not move the wallet | `contracts/test/DeskBand.t.sol` |
+| DeskBand instruction (new SwapVM opcode) | `contracts/src/swapvm/DeskBand.sol:21` |
+| Pricing: price unit, both directions, value-weighted band, decay, fee | `contracts/src/swapvm/DeskBandMath.sol:45`, `:81` |
+| Opcode table on the modified router | `contracts/src/swapvm/WalletDeskRouter.sol:58` |
+| `preview` uses the same math as the opcode | `contracts/src/swapvm/WalletDeskRouter.sol:33` |
+| Program bytes and order packing | `contracts/src/swapvm/DeskBandProgram.sol`, `contracts/src/swapvm/OrderBuilder.sol` |
+| Unmodified `Aqua.push` / `Aqua.pull` | `contracts/lib/swap-vm/src/SwapVM.sol:237`, `:286` |
+| Shipped-strategy check and deliverable inventory | `contracts/src/OverflowHook.sol:181`, `:515` |
+| Ship does not move the wallet; quote equals swap in both directions | `contracts/test/DeskBand.t.sol` |
 
-Registry used on the fork: `0x1111113CCf1426A8E30e2bfF5E005d929bF6a90a`. Checked with `cast codesize` on Unichain mainnet, 5 Nov 2026. KycNFT `0x26FFc7D378E8e49Be2c483295A3e3E511F96a468` has code on the same chain. The hook does not call it.
+Registry: `0x1111113CCf1426A8E30e2bfF5E005d929bF6a90a` (live on Unichain). The canonical `AquaSwapVMRouter`
+`0x111111338c5091E8440b67B168bAe16a668AC0De` has no DeskBand opcode, so WalletDesk redeploys a modified SwapVM, which
+1inch's rules allow. Diff: `docs/SWAPVM_DIFF.md`.
 
-## Arc
+## Chainlink CRE integration
 
-`contracts/src/FeeShareTreasury.sol:84` credits a fill. `contracts/src/FeeShareTreasury.sol:106` pays the claim. Native 18-decimal value is rejected. `claimableNativeUnits` multiplies the 6-decimal balance by `1e12` for display only. `contracts/src/CctpFeeBridge.sol` burns USDC toward Arc domain 26. The fork demo does not call it.
+| What | Where |
+| --- | --- |
+| Workflow: cron → two HTTP sources → DON consensus median → EVM write → read-back | `services/cre/desk-guard/main.ts` |
+| Consumer: `IReceiver.onReport`, ERC165 `0x805f2132`, replay-safe ordering | `contracts/src/DeskPriceFeed.sol:66`, `:96` |
+| Hook reads the reference; missing or stale fails closed | `contracts/src/OverflowHook.sol:461` |
+| Tests: deviation skip, fresh fill, stale skip, forwarder auth, clock drift | `contracts/test/Overflow.t.sol` (`test_creReferenceGuard`, `test_feedRejectsStrangersAndRollbacks`, `test_feedUsesWriteTimeForFreshness`) |
 
-Deploy, from `contracts/`, after exporting `PRIVATE_KEY` and `ATTESTOR`:
+CRE supports Unichain Sepolia, not Unichain mainnet. Simulation steps and forwarder addresses: `docs/CRE.md`.
 
-```bash
-forge script script/DeployArcTreasury.s.sol \
-  --rpc-url "$ARC_RPC" \
-  --broadcast \
-  --with-gas-price 20000000000
-```
+## Demo
 
-## Unichain Sepolia
-
-The canonical PoolManager is `0x00B036B58a818B1BC34d502D3fE730Db729e62AC`. That is the only PoolManager on the Uniswap v4 deployments page and on the Unichain contract-address page (checked 5 Nov 2026). The same address is what hookmate returns. On `https://sepolia.unichain.org` it has code size 24009 and runtime codehash `0x7c5e10e0bd8580e13b48751e4cd7db6315577488d0f76b20bc6c8bcbe2646dc0`. `0x9cB26A7183B2F4515945Dc52CB4195B0d2D06C95` also has code, size 24009, and a different codehash `0x2566e42d45723eef05d7253a7b7c140a6da61992594525fc66d06b4a973b5d0b`. It is not on the deployments page. The script defaults to the canonical address. Set `POOL_MANAGER` only if you mean the other one. The Sepolia explorer HTML sits behind a bot check, so the check above is the RPC code read plus the docs pages.
-
-```bash
-forge script script/DeployUnichainSepolia.s.sol \
-  --rpc-url "$UNICHAIN_SEPOLIA_RPC" \
-  --broadcast \
-  --slow
-```
-
-See `contracts/.env.example`. The demo path is the mainnet fork, not Sepolia.
-
-## Web
+One command, from the repo root. It forks Unichain mainnet, deploys the desk, ships a maker, runs two overflow
+swaps (WalletDesk's router and Uniswap's stock router), credits a USDC rebate, starts the keeper and serves the UI.
+It refuses any RPC that is not loopback and does not print private keys.
 
 ```bash
-cd apps/web
-npm install
-npm run dev
+./script/demo.sh
 ```
 
-`./script/demo.sh` starts this for you on http://127.0.0.1:43127. Screens: landing, ship (approve and ship), live fill, Arc fees (claim), docs. The keeper in `services/keeper` indexes `FeeAccrued` and Aqua `Pulled` / `Pushed`, and on a loopback RPC it credits the local treasury.
+Then open http://127.0.0.1:43127/live. Keeper: http://127.0.0.1:8787/health (also `/fills`, `/skips`,
+`/reference`). Beat-by-beat script: `docs/WALKTHROUGH.md`.
+
+To click Approve, Ship, Run overflow, or Claim, import the Anvil maker and taker the script prints. Their keys are
+in the Anvil log the script names. They are Foundry's public development accounts; never use them on a public network.
+
+## Deploy
+
+All scripts are env-driven and broadcast only when you add `--broadcast`. See `contracts/.env.example`.
+
+```bash
+# Unichain mainnet, live PoolManager + live Aqua, mock-token demo pool
+CONFIRM_MAINNET=true forge script script/DeployUnichainMainnet.s.sol --rpc-url "$UNICHAIN_RPC" --slow
+```
+
+```bash
+# Unichain Sepolia: Aqua is not deployed there, so deploy the unmodified registry too
+DEPLOY_AQUA=true CRE_FORWARDER=0x6E9EE680ef59ef64Aa8C7371279c27E496b5eDc1 \
+  forge script script/DeployUnichainSepolia.s.sol --rpc-url "$UNICHAIN_SEPOLIA_RPC" --slow
+```
+
+```bash
+# Optional USDC rebates: CCTP bridge on Unichain Sepolia, treasury on Arc testnet
+forge script script/DeployCctpBridge.s.sol --rpc-url "$UNICHAIN_SEPOLIA_RPC" --slow
+forge script script/DeployArcTreasury.s.sol --rpc-url "$ARC_RPC" --with-gas-price 20000000000
+```
+
+Web against a real deployment: set `NEXT_PUBLIC_NETWORK=unichain` (or `sepolia`) and the addresses in
+`apps/web/.env.local`. See `apps/web/.env.example`.
+
+## USDC rebates (optional)
+
+The maker's spread on each fill stays in the maker wallet as the output token. Separately, `FeeShareTreasury` runs a
+protocol-funded USDC rebate per attested fill, with an optional protocol split (`setSplit`). `CctpFeeBridge` moves
+USDC from Unichain Sepolia to Arc (domain 26) with Circle CCTP V2. The local fork cannot get an Iris attestation, so
+the demo credits the treasury directly and labels that path `attestor`. Details: `docs/CCTP.md`, `arc/README.md`.
 
 ## Layout
 
 ```
-contracts/     Foundry project. v4 hook, modified SwapVM, treasury, tests, scripts.
-arc/           FeeShareTreasury source for Arc Studio.
-apps/web/      Next.js maker shell.
-docs/          Architecture diagram and the SwapVM diff.
+contracts/          Foundry project: hook, modified SwapVM, price feed, treasury, tests, scripts
+services/cre/       Chainlink CRE desk-guard workflow (TypeScript SDK)
+services/keeper/    Fill/skip indexer, local reference stand-in, fork rebates
+apps/web/           Next.js maker app
+arc/                FeeShareTreasury source for Arc Studio (optional track)
+docs/               Architecture, design spec, threat model, prompts, SwapVM diff, CRE, CCTP, walkthrough
 ```
 
-`contracts/lib` vendors the upstream trees at the versions the tests compile against. SwapVM is tag `v1.0.2`. solidity-utils is tag `6.9.7`.
+`contracts/lib` vendors the upstream trees at the versions the tests compile against: SwapVM `v1.0.2`, solidity-utils
+`6.9.7`, Aqua, OpenZeppelin uniswap-hooks (with v4-core / v4-periphery), forge-std. Commit `7c60d3f` is that vendoring
+and contains no WalletDesk code.
 
-## Risks
+## Known limitations
 
-- The hook only pulls a maker when `msg.sender` of `PoolManager.swap` is the configured `OverflowRouter`. A generic swap router will not prefund the residual, so the hook refuses it.
-- DeskBand programs are not portable to the canonical Aqua router, and canonical programs are not portable here.
-- Fork tests need a public Unichain RPC. If it is down, run the offline command above.
-- Sepolia deploy uses the canonical PoolManager above. Override `POOL_MANAGER` if you have a reason to use the other contract.
-- Arc Studio URL, a broadcast claim transaction, and an Iris-attested CCTP mint still need your key. The contracts and the settler script are in the repo. `docs/CCTP.md` says why the fork cannot finish CCTP.
-- Aqua v1 is aimed at EOA makers. The tests use an EOA-style `vm.prank` maker.
+- One residual goes to one desk; no splitting across desks. The pool leg is a fixed cap, not sized by price impact.
+- Exact-output swaps and native-ETH pools skip desks (the pool fills).
+- Someone holding real inventory can occupy desk slots with off-market quotes that the guard skips. It costs them
+  capital lockup, not funds. See `docs/THREAT_MODEL.md`.
+- The pool-spot check alone can be pushed within one transaction; the CRE reference is what closes that, so run the
+  hook with a feed in production.
+- Aqua v1 targets EOA makers. Tests use EOA-style makers. Not audited.
+
+## AI disclosure
+
+AI tools wrote most of this code under the team's direction. File-level attribution: `AI.md`. Prompts and the spec:
+`docs/prompts/`, `docs/spec/DESIGN.md`.
 
 ## License
 
-MIT for WalletDesk source. Upstream packages keep their own licenses, including the Degensoft SwapVM and Aqua notices under `contracts/lib`.
+WalletDesk source is MIT, except `contracts/src/swapvm/`, which modifies SwapVM and is licensed
+`LicenseRef-Degensoft-SwapVM-1.1` (text in `contracts/src/swapvm/LICENSE-SwapVM-1.1.txt`). Upstream packages under
+`contracts/lib` keep their own licenses, including the Degensoft SwapVM and Aqua notices.
