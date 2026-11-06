@@ -13,3 +13,6 @@ apps/web/AGENTS.md
 uploads/
 agent-tools/
 .DS_Store
+
+# Superdesign working state (init context, website extracts, temp HTML)
+.superdesign/

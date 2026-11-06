@@ -57,6 +57,44 @@ const audiences = [
   { who: "LPs", what: "Keep earning on the pool leg; the desk only takes what exceeds the pool cap." },
 ];
 
+/** Structural comparison only: each row describes how a system works, not how well. Sources in docs/COMPETITION.md. */
+const compare = {
+  columns: ["WalletDesk", "UniswapX", "RFQ desks (Hashflow, Bebop)", "1inch Aqua on its own"],
+  rows: [
+    ["Where the extra liquidity sits", "Maker wallets, through Aqua", "Wherever fillers source it", "Market makers' inventory", "Maker wallets"],
+    ["What the swapper does", "A normal v4 pool swap, any router", "Signs an order; fillers compete", "Asks for a quote, then executes it", "Swaps routed to Aqua strategies"],
+    ["Reaches a v4 pool's own swaps", "Yes, inside the pool swap", "Separate order flow", "Separate API", "Not by itself"],
+    ["Guard against a stale price", "Pool spot and Chainlink CRE reference, per maker", "Dutch auction decay", "Short quote expiry", "Maker's strategy and range"],
+  ],
+};
+
+const questions = [
+  {
+    q: "What if the maker's wallet no longer holds the tokens?",
+    a: "The hook checks the wallet balance and Aqua allowance before filling. If either is short, the desk is skipped (MakerUnfunded) and the pool fills the swap. Shipped Aqua balances are virtual, so only real inventory counts.",
+  },
+  {
+    q: "Can someone push the pool price and drain a desk?",
+    a: "The pool spot can be moved inside one transaction, so it is not trusted alone. A desk fills only within its maker's limit of both the pool spot and the Chainlink CRE reference, which is written off chain and cannot be moved in the same block.",
+  },
+  {
+    q: "Does a swapper need a special router?",
+    a: "No. The hook works inside the pool swap, so any v4 router gets the overflow fill. On Unichain Sepolia it filled a swap sent through Uniswap's own PoolSwapTest router.",
+  },
+  {
+    q: "What if the fill fails halfway?",
+    a: "Every desk call runs in a try/catch with a gas cap. On failure the hook returns the residual to PoolManager and the pool fills the whole swap. A desk can be skipped; a swap is never blocked by a desk.",
+  },
+  {
+    q: "Can anyone spam the pool with desks?",
+    a: "Each pool holds up to 8 desks. When it is full, a new desk replaces one only if it brings more real, deliverable inventory, and desks that run their own hooks are rejected.",
+  },
+  {
+    q: "Is it audited?",
+    a: "No. This is hackathon code. The threat model lists each threat, its mitigation and the test that covers it.",
+  },
+];
+
 const judgePath = [
   {
     title: "See one swap split on chain",
@@ -176,10 +214,56 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* How it compares */}
+      <section className="flex flex-col gap-6" aria-labelledby="compare-heading">
+        <SectionHeading
+          index="02"
+          id="compare-heading"
+          eyebrow="How it compares"
+          title="Not another order flow. More liquidity inside the pool you already use."
+          lead="UniswapX and RFQ desks route a swap somewhere else. WalletDesk brings maker liquidity into the Uniswap v4 pool swap itself, so it works alongside them: a filler or a router can still send flow through a WalletDesk pool."
+        />
+        <div className="overflow-x-auto rounded-[12px] border border-black/8">
+          <table className="w-full min-w-[720px] text-left text-[13px]">
+            <caption className="sr-only">How WalletDesk compares with UniswapX, RFQ desks and 1inch Aqua on its own</caption>
+            <thead className="bg-[#FAFAFB]">
+              <tr className="border-b border-dashed border-black/15">
+                <th scope="col" className="w-[22%] px-4 py-3 font-mono text-[11px] font-normal tracking-wider text-[#5D5D66] uppercase">
+                  <span className="sr-only">Question</span>
+                </th>
+                {compare.columns.map((col, i) => (
+                  <th key={col} scope="col" className={`px-4 py-3 text-[13px] font-semibold ${i === 0 ? "text-[#0050C8]" : "text-[#18181B]"}`}>
+                    {col}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {compare.rows.map(([label, ...cells]) => (
+                <tr key={label} className="border-t border-black/8 align-top">
+                  <th scope="row" className="px-4 py-3 font-medium text-[#18181B]">
+                    {label}
+                  </th>
+                  {cells.map((cell, i) => (
+                    <td key={i} className={`px-4 py-3 ${i === 0 ? "bg-[#F5F9FF] font-medium text-[#18181B]" : "text-[#4A4A52]"}`}>
+                      {cell}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className="text-[13px] text-[#5D5D66]">
+          How each system works, from its own documentation; not a ranking. Sources:{" "}
+          <ExternalLink href={repoFile("docs/COMPETITION.md")}>docs/COMPETITION.md</ExternalLink>.
+        </p>
+      </section>
+
       {/* Proof */}
       <section className="flex flex-col gap-6">
         <SectionHeading
-          index="02"
+          index="03"
           eyebrow="Proof"
           title="Running on chain, simulated on Chainlink CRE, covered by tests."
           lead="Every number below links to the transaction, the run log, or the test that backs it."
@@ -192,9 +276,30 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Questions */}
+      <section className="flex flex-col gap-6" aria-labelledby="questions-heading">
+        <SectionHeading index="04" id="questions-heading" eyebrow="Questions judges ask" title="What can go wrong, and what the hook does about it." />
+        <div className="divide-y divide-dashed divide-black/15 border-y border-dashed border-black/15">
+          {questions.map(({ q, a }) => (
+            <details key={q} className="group py-1">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-3 text-[15px] font-medium text-[#18181B] [&::-webkit-details-marker]:hidden">
+                {q}
+                <span className="font-mono text-[18px] leading-none text-[#5D5D66] transition-transform group-open:rotate-45 motion-reduce:transition-none" aria-hidden>
+                  +
+                </span>
+              </summary>
+              <p className="max-w-3xl pb-4 text-[14px] leading-relaxed text-pretty text-[#4A4A52]">{a}</p>
+            </details>
+          ))}
+        </div>
+        <p className="text-[13px] text-[#5D5D66]">
+          Every threat, its mitigation and the test that covers it: <ExternalLink href={repoFile("docs/THREAT_MODEL.md")}>docs/THREAT_MODEL.md</ExternalLink>.
+        </p>
+      </section>
+
       {/* Judge path */}
       <section className="rounded-[16px] bg-[#18181B] p-6 text-white md:p-8" aria-labelledby="judge-heading">
-        <Eyebrow index="03" className="text-[#A1A1AA] [&>span:first-child]:text-[#7CB4FF]">
+        <Eyebrow index="05" className="text-[#A1A1AA] [&>span:first-child]:text-[#7CB4FF]">
           For judges
         </Eyebrow>
         <h2 id="judge-heading" className="mt-2 text-2xl font-semibold tracking-tight text-balance md:text-[28px]">
