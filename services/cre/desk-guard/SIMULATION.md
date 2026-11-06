@@ -96,3 +96,50 @@ CALL report            0x11289565
 
 - A receiver that returns true for `0xffffffff` stops after the second staticcall. `onReport` is never called, and the outer call does not revert.
 - A receiver that reverts inside `onReport` shows the error on the inner call only. The outer `report()` still succeeds.
+
+## Run on 2026-11-06T15:44:42Z (team machine, CRE CLI version v1.39.0)
+
+Target `unichain-sepolia`, feed `0xb1749dDDd701D99a9f318610a7A6962b11409c82` (see docs/DEPLOYMENTS.md). Exit status: 0.
+
+```
+$ cre workflow simulate desk-guard --target unichain-sepolia --non-interactive --trigger-index 0
+Initializing...
+Loading settings...
+! Using default private key for chain write simulation. To use your own key, set CRE_ETH_PRIVATE_KEY in your .env file or system environment.
+Checking RPC connectivity...
+Compiling workflow...
+✓ Workflow compiled
+✓ Simulation limits enabled
+  HTTP: req=120kb resp=250kb timeout=10s | ConfHTTP: req=125kb resp=500kb timeout=1m30s | Consensus obs=25kb | ChainWrite evm_report=50kb evm_gas=10000000 solana_report=265b solana_cu=300000 | WASM binary=100mb compressed=20mb
+  Binary hash: aa9ea86f612f5a1dbfa6c932be850399a8b12b35c3ce834dc31e68b94feeb49e
+  Config hash: be95ee6c9619e1d7e1f61b5d2d8a4e17de8a7298bc5cb5d2c357a81543ed075b
+2026-11-06T21:14:40Z [SIMULATION] Simulator Initialized
+
+2026-11-06T21:14:40Z [SIMULATION] Running trigger trigger=cron-trigger@1.0.0
+2026-11-06T21:14:41Z [USER LOG] source coinbase: 0.998950
+2026-11-06T21:14:41Z [USER LOG] source kraken: 0.998951 (inverted)
+2026-11-06T21:14:41Z [USER LOG] consensus reference price: 0.998950 (token1 per token0)
+2026-11-06T21:14:41Z [USER LOG] onchain reference: priceX18=998615000000000000 updatedAt=1793976407 deviation=3 bps age=3474s
+2026-11-06T21:14:42Z [USER LOG] report written: poolId=0xae93c1bd88e46a2fae33d97774b45f23f4b50d09592456487f208e1314bda1fe priceX18=998950550671794615 observedAt=1793979881 tx=0x
+
+✓ Workflow Simulation Result:
+{
+  "action": "written",
+  "deviationBps": "3",
+  "observedAt": "1793979881",
+  "onchainPriceX18": "998615000000000000",
+  "poolId": "0xae93c1bd88e46a2fae33d97774b45f23f4b50d09592456487f208e1314bda1fe",
+  "price": "0.998950",
+  "priceX18": "998950550671794615",
+  "txHash": "0x"
+}
+
+2026-11-06T21:14:42Z [SIMULATION] Execution finished signal received
+2026-11-06T21:14:42Z [SIMULATION] Skipping WorkflowEngineV2
+
+╭──────────────────────────────────────────────────────╮
+│ Simulation complete! Ready to deploy your workflow?  │
+│                                                      │
+│ Run cre account access to request deployment access. │
+╰──────────────────────────────────────────────────────╯
+```
