@@ -14,6 +14,7 @@ Start with the [project README](../README.md). For judging, go to [JUDGING.md](J
 | [ORACLE.md](ORACLE.md) | Why the pool-spot adapter is not the desk quote, and how the price guard works instead. |
 | [CCTP.md](CCTP.md) | Optional USDC rebates: Circle CCTP V2 from Unichain Sepolia to Arc. |
 | [WALKTHROUGH.md](WALKTHROUGH.md) | Demo video script, beat by beat. |
+| [DESIGN_NOTES.md](DESIGN_NOTES.md) | UI decisions, the references behind them (via Designeer), and the contrast fixes. |
 | [prompts/](prompts/README.md) | AI prompts and planning artifacts (ETHGlobal AI disclosure). |
 
 Also in the repo root: [SUBMISSION.md](../SUBMISSION.md) (submission checklist and form text),

@@ -1,7 +1,13 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
 import { ExternalLink, InfoCard, SectionHeading } from "@/components/site";
 import { repoFile } from "@/lib/live";
+
+export const metadata: Metadata = {
+  title: "How it works",
+  description: "One swap, two sources of liquidity, one transaction: the OverflowHook, the DeskBand SwapVM opcode and the Chainlink CRE price guard.",
+};
 
 const steps = [
   {

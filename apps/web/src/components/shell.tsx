@@ -37,10 +37,18 @@ export function Shell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-white text-[#18181B]">
+      <a
+        href="#main"
+        className="sr-only z-30 rounded-md bg-[#18181B] px-3 py-2 text-[13px] text-white focus:not-sr-only focus:fixed focus:top-3 focus:left-3"
+      >
+        Skip to content
+      </a>
       <header className="sticky top-0 z-20 border-b border-black/8 bg-white/90 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 md:px-6">
           <div className="flex items-center gap-2">
-            <Link href="/" className="text-[15px] font-semibold tracking-tight">
+            <Link href="/" className="flex items-center gap-2 text-[15px] font-semibold tracking-tight">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/mark.svg" alt="" width={20} height={20} className="size-5" />
               WalletDesk
             </Link>
             {(() => {
@@ -61,6 +69,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
               <Link
                 key={link.href}
                 href={link.href}
+                aria-current={pathname === link.href ? "page" : undefined}
                 className={cn(
                   "rounded-lg px-3 py-1.5 text-[13px] text-[#5D5D66] transition-colors hover:text-[#18181B]",
                   pathname === link.href && "bg-[#F2F2F3] text-[#18181B]",
@@ -102,8 +111,9 @@ export function Shell({ children }: { children: React.ReactNode }) {
             <Link
               key={link.href}
               href={link.href}
+              aria-current={pathname === link.href ? "page" : undefined}
               className={cn(
-                "rounded-lg px-3 py-1 text-[13px] text-[#5D5D66]",
+                "shrink-0 rounded-lg px-3 py-1.5 text-[13px] text-[#5D5D66]",
                 pathname === link.href && "bg-[#F2F2F3] text-[#18181B]",
               )}
             >
@@ -112,7 +122,9 @@ export function Shell({ children }: { children: React.ReactNode }) {
           ))}
         </nav>
       </header>
-      <main className="mx-auto max-w-6xl px-4 py-8 md:px-6 md:py-12">{children}</main>
+      <main id="main" tabIndex={-1} className="mx-auto max-w-6xl px-4 py-8 outline-none md:px-6 md:py-12">
+        {children}
+      </main>
       <footer className="border-t border-black/8">
         <div className="mx-auto flex max-w-6xl flex-wrap gap-x-4 gap-y-1 px-4 py-4 text-[12px] text-[#5D5D66] md:px-6">
           <span>Powered by SwapVM — © Degensoft Ltd 2025</span>
