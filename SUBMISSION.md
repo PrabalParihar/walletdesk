@@ -25,7 +25,7 @@ Done and verified:
 | 3 | `cre workflow simulate` (Chainlink requires a successful run) | You, on your Mac (your `cre login` lives there) | **Done.** Passed against the live Sepolia feed; committed from the team machine (`21869ed`). Output in `services/cre/desk-guard/SIMULATION.md` |
 | 4 | Cursor prompts | Claude | Done as a labelled reconstruction: `docs/prompts/01-cursor-v1.md` (the session was not exported) |
 | 5 | Your own commits from here (SIMULATION.md output, any tweak). No squash or history rewrite | You | — |
-| 6 | Video: 2–4 min, ≥720p, your voice, not sped up, not a phone | You | `./script/demo.sh`, then use the **Demo maker / Demo taker** buttons; script in `docs/WALKTHROUGH.md` |
+| 6 | Video: 2–4 min, ≥720p, your voice, not sped up, not a phone | You | Picture is rendered: `video/out/walletdesk-demo.mp4` (2:15, 1080p, silent; see `video/README.md`). Read the timed script in `docs/WALKTHROUGH.md` over it in your own voice and mux. Or record the screen yourself with `./script/demo.sh` |
 | 7 | Make the repo public | You, right before filing | Uniswap requires it |
 | 8 | Uniswap feedback form with the link to `FEEDBACK.md` | You | https://developers.uniswap.org/hackathon-feedback |
 | 9 | File on ETHGlobal, select 1inch, Uniswap Foundation, Chainlink, paste the text below | You | Before 09:00 IST Sat 7 Nov |

@@ -13,7 +13,8 @@ Start with the [project README](../README.md). For judging, go to [JUDGING.md](J
 | [SWAPVM_DIFF.md](SWAPVM_DIFF.md) | What is unmodified and what we changed in SwapVM; DeskBand pricing; license. |
 | [ORACLE.md](ORACLE.md) | Why the pool-spot adapter is not the desk quote, and how the price guard works instead. |
 | [CCTP.md](CCTP.md) | Optional USDC rebates: Circle CCTP V2 from Unichain Sepolia to Arc. |
-| [WALKTHROUGH.md](WALKTHROUGH.md) | Demo video script, beat by beat. |
+| [WALKTHROUGH.md](WALKTHROUGH.md) | Demo video script, timed to the rendered video, plus a record-it-yourself version. |
+| [../video/](../video/README.md) | The demo video's picture, made with Remotion from real recordings on a Unichain fork. |
 | [DESIGN_NOTES.md](DESIGN_NOTES.md) | UI decisions, the references behind them (via Designeer), and the contrast fixes. |
 | [prompts/](prompts/README.md) | AI prompts and planning artifacts (ETHGlobal AI disclosure). |
 
