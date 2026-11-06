@@ -4,6 +4,15 @@
 
 ## To do (on a machine with `cre login`)
 
+One command against the live Unichain Sepolia feed (config committed, addresses in `docs/DEPLOYMENTS.md`). It
+appends the real output to the end of this file:
+
+```bash
+./services/cre/simulate-sepolia.sh
+```
+
+Manual equivalents:
+
 ```bash
 cd services/cre
 # local fork (see README section 3 for the etch and config steps)

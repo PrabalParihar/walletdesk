@@ -15,12 +15,13 @@ Powered by SwapVM — © Degensoft Ltd 2025 · Powered by Aqua — © Degensoft 
 
 | Check | Result |
 | --- | --- |
+| **Live on Unichain Sepolia** | Deployed, desk shipped and registered, two real overflow fills (OverflowRouter and Uniswap's PoolSwapTest) pulled from the maker wallet through Aqua. 31 transactions, each linked: `docs/DEPLOYMENTS.md` |
 | Local Foundry suite | 38 tests pass: `forge test --no-match-contract OverflowForkTest` |
 | Same hook suite on a Unichain mainnet fork, live PoolManager `0x1F98…0004` and live Aqua `0x1111113C…a90a` | 21 tests pass: `forge test --match-contract OverflowForkTest` |
 | `DemoSeed` broadcast on a local fork | Ship, register, fill through `OverflowRouter`, fill through Uniswap's stock `PoolSwapTest` router, USDC rebate. `ONCHAIN EXECUTION COMPLETE & SUCCESSFUL` |
 | `DeployUnichainMainnet` rehearsed on the fork | Deploys against the live contracts; refuses without `CONFIRM_MAINNET=true` |
 | Keeper on the fork | Indexes fills (Aqua `Pulled` / `Pushed`) and skip reasons; posts a live USDT/USD reference (median of Coinbase and Kraken) |
-| Chainlink CRE workflow | `cre workflow build`, `tsc` and 16 SDK tests pass. `cre workflow simulate` needs a CRE login: see `docs/CRE.md` |
+| Chainlink CRE workflow | `cre workflow build`, `tsc` and 16 SDK tests pass. Simulation against the live Sepolia feed: `./services/cre/simulate-sepolia.sh` (needs `cre login`); output in `services/cre/desk-guard/SIMULATION.md` |
 | Web | `npm run lint` and `npm run build` pass. Playwright drove the real UI on the fork: a swap through Uniswap's PoolSwapTest filled from the desk, a maker shipped and registered a desk, and the maker claimed the USDC rebate, with no console errors |
 
 Worked numbers (equal shelves, 0.99–1.01 band, 30 bps): 5 in with a pool cap of 1 pulls `3.988` of the output token
