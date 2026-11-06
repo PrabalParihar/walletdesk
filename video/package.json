@@ -1,0 +1,20 @@
+{
+  "name": "walletdesk-video",
+  "private": true,
+  "description": "Demo video for WalletDesk, made with Remotion. Silent visual track: record your own voice over it (ETHGlobal rules).",
+  "scripts": {
+    "studio": "remotion studio",
+    "render": "remotion render WalletDeskDemo out/walletdesk-demo.mp4",
+    "still": "remotion still WalletDeskDemo out/still.png"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.537",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "remotion": "4.0.537"
+  },
+  "devDependencies": {
+    "@types/react": "^19",
+    "typescript": "^5"
+  }
+}
