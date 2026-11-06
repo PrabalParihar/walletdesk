@@ -16,7 +16,7 @@ Powered by SwapVM — © Degensoft Ltd 2025 · Powered by Aqua — © Degensoft 
 | Check | Result |
 | --- | --- |
 | Local Foundry suite | 38 tests pass: `forge test --no-match-contract OverflowForkTest` |
-| Same hook suite on a Unichain mainnet fork, live PoolManager `0x1F98…0004` and live Aqua `0x1111113C…a90a` | 20 tests pass: `forge test --match-contract OverflowForkTest` |
+| Same hook suite on a Unichain mainnet fork, live PoolManager `0x1F98…0004` and live Aqua `0x1111113C…a90a` | 21 tests pass: `forge test --match-contract OverflowForkTest` |
 | `DemoSeed` broadcast on a local fork | Ship, register, fill through `OverflowRouter`, fill through Uniswap's stock `PoolSwapTest` router, USDC rebate. `ONCHAIN EXECUTION COMPLETE & SUCCESSFUL` |
 | `DeployUnichainMainnet` rehearsed on the fork | Deploys against the live contracts; refuses without `CONFIRM_MAINNET=true` |
 | Keeper on the fork | Indexes fills (Aqua `Pulled` / `Pushed`) and skip reasons; posts a live USDT/USD reference (median of Coinbase and Kraken) |
@@ -110,12 +110,19 @@ All scripts are env-driven and broadcast only when you add `--broadcast`. See `c
 ```bash
 # Unichain mainnet, live PoolManager + live Aqua, mock-token demo pool
 CONFIRM_MAINNET=true forge script script/DeployUnichainMainnet.s.sol --rpc-url "$UNICHAIN_RPC" --slow
+# Then make it do real work with the same key: reference price, ship, register, two overflow swaps
+# (OverflowRouter and Uniswap's PoolSwapTest). The reference is the keeper's public-API median.
+REFERENCE_PRICE_X18=$(cd ../services/keeper && node --input-type=module -e \
+  "import {fetchReference,toPriceX18} from './reference.mjs'; console.log(toPriceX18((await fetchReference()).price).toString())")
+DEPLOYMENTS=./deployments/unichain.json REFERENCE_PRICE_X18=$REFERENCE_PRICE_X18 \
+  forge script script/SeedLive.s.sol --rpc-url "$UNICHAIN_RPC" --slow
 ```
 
 ```bash
-# Unichain Sepolia: Aqua is not deployed there, so deploy the unmodified registry too
-DEPLOY_AQUA=true CRE_FORWARDER=0x6E9EE680ef59ef64Aa8C7371279c27E496b5eDc1 \
-  forge script script/DeployUnichainSepolia.s.sol --rpc-url "$UNICHAIN_SEPOLIA_RPC" --slow
+# Unichain Sepolia: Aqua is not deployed there, so deploy the unmodified registry too.
+# Writes deployments/sepolia.json. Seed it with SeedLive (DEPLOYMENTS=./deployments/sepolia.json), then hand the
+# feed to the CRE simulation forwarder: setForwarder(0x6E9EE680ef59ef64Aa8C7371279c27E496b5eDc1).
+DEPLOY_AQUA=true forge script script/DeployUnichainSepolia.s.sol --rpc-url "$UNICHAIN_SEPOLIA_RPC" --slow
 ```
 
 ```bash
