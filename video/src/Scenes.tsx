@@ -22,8 +22,8 @@ function useEnter(delay: number) {
 
 function Label({ index, children, dark = false }: { index?: string; children: React.ReactNode; dark?: boolean }) {
   return (
-    <div style={{ display: "flex", gap: 14, fontFamily: mono, fontSize: 24, letterSpacing: 1.8, textTransform: "uppercase", color: dark ? "#A1A1AA" : c.muted }}>
-      {index ? <span style={{ color: dark ? "#7CB4FF" : c.desk }}>{index}</span> : null}
+    <div style={{ display: "flex", gap: 14, fontFamily: mono, fontSize: 24, letterSpacing: 1.8, textTransform: "uppercase", color: c.muted }}>
+      {index ? <span style={{ color: c.link }}>{index}</span> : null}
       <span>{children}</span>
     </div>
   );
@@ -32,7 +32,7 @@ function Label({ index, children, dark = false }: { index?: string; children: Re
 function Mark({ size = 64 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 32 32">
-      <rect width="32" height="32" rx="8" fill={c.ink} />
+      <rect width="32" height="32" rx="8" fill="#18181B" stroke="rgba(255,255,255,0.12)" />
       <rect x="6" y="10" width="6" height="12" rx="2" fill="#FF3D9A" />
       <rect x="14" y="10" width="12" height="12" rx="2" fill="#3D8BFF" />
     </svg>
@@ -40,7 +40,7 @@ function Mark({ size = 64 }: { size?: number }) {
 }
 
 function Pill({ children, tone }: { children: React.ReactNode; tone: "pool" | "desk" | "cre" }) {
-  const map = { pool: ["rgba(255,0,122,0.10)", "#C2185B"], desk: ["rgba(0,102,250,0.10)", "#0050C8"], cre: ["rgba(55,91,210,0.10)", "#2A44A0"] }[tone];
+  const map = { pool: ["rgba(255,0,122,0.15)", "#FF8CC3"], desk: ["rgba(0,102,250,0.18)", "#9CC3FF"], cre: ["rgba(55,91,210,0.22)", "#B4C3F5"] }[tone];
   return <span style={{ padding: "10px 22px", borderRadius: 999, background: map[0], color: map[1], fontSize: 28, fontWeight: 500 }}>{children}</span>;
 }
 
@@ -98,7 +98,7 @@ export function Explainer() {
             {split > 0.5 ? "4 DA" : ""}
           </div>
         </div>
-        <div style={{ position: "absolute", left: poolW - 1, top: -20, height: 160, borderLeft: "3px dashed #18181B", opacity: cap }} />
+        <div style={{ position: "absolute", left: poolW - 1, top: -20, height: 160, borderLeft: `3px dashed ${c.ink}`, opacity: cap }} />
         <div style={{ position: "absolute", left: poolW + 14, top: 132, fontFamily: mono, fontSize: 24, color: c.ink, opacity: cap }}>pool cap: 1 DA</div>
       </div>
       <div style={{ marginTop: 90, display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 30, width: W }}>
@@ -160,7 +160,7 @@ export function Proof() {
 export function Outro() {
   const fade = useFade();
   return (
-    <AbsoluteFill style={{ background: c.ink, color: "#fff", fontFamily: sans, opacity: fade, justifyContent: "center", alignItems: "center" }}>
+    <AbsoluteFill style={{ background: c.raised, color: c.ink, fontFamily: sans, opacity: fade, justifyContent: "center", alignItems: "center" }}>
       <div style={{ ...useEnter(0), display: "flex", alignItems: "center", gap: 24 }}>
         <Mark size={84} />
         <span style={{ fontSize: 76, fontWeight: 700, letterSpacing: -1.5 }}>WalletDesk</span>

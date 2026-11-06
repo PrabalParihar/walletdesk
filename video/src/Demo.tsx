@@ -40,7 +40,7 @@ const clips: Clip[] = [
       { at: "form", tag: "SwapVM", text: "DeskBand: price band 0.99–1.01, 30 bps fee, max 100 bps off the reference" },
       { at: "ship", tag: "Aqua + v4", text: "Ship to 1inch Aqua, register on the hook. No tokens leave the wallet." },
     ],
-    zooms: [{ at: "form", s: 1.45, x: 800, y: 640 }],
+    zooms: [{ at: "form", s: 1.4, x: 760, y: 620 }],
   },
   {
     m: live as Manifest,
@@ -58,9 +58,9 @@ const clips: Clip[] = [
       { at: "balances", shift: -1.1, text: "The maker's wallet changed; Aqua's virtual shelf tracks it" },
     ],
     zooms: [
-      { at: "router", s: 1.4, x: 1080, y: 590 },
-      { at: "fill", shift: -1.1, s: 1.35, x: 1080, y: 380 },
-      { at: "balances", shift: -1.1, s: 1.35, x: 700, y: 300 },
+      { at: "router", s: 1.4, x: 1150, y: 600 },
+      { at: "fill", shift: -1.1, s: 1.35, x: 1150, y: 380 },
+      { at: "balances", shift: -1.1, s: 1.35, x: 690, y: 300 },
     ],
   },
   {
@@ -76,10 +76,10 @@ const clips: Clip[] = [
       { at: "skip", tag: "Skipped", text: "Desk skipped, pool filled it alone. The swap never reverts because of a desk." },
     ],
     zooms: [
-      { at: 0, s: 1.45, x: 700, y: 250 },
+      { at: 0, s: 1.45, x: 690, y: 740 },
       { at: "connect", s: 1 },
-      { at: "router", s: 1.35, x: 1080, y: 600 },
-      { at: 9.7, s: 1.45, x: 700, y: 260 },
+      { at: "router", s: 1.35, x: 1150, y: 600 },
+      { at: 9.7, s: 1.45, x: 690, y: 260 },
     ],
   },
   {
@@ -95,7 +95,7 @@ const clips: Clip[] = [
       { at: "jump", tag: "Ctrl K", text: "Jump to any contract, transaction or doc" },
     ],
     zooms: [
-      { at: "code", shift: -1.1, s: 1.25, x: 800, y: 470 },
+      { at: "code", shift: -1.1, s: 1.25, x: 930, y: 470 },
       { at: "jump", s: 1.35, x: 800, y: 330 },
     ],
   },
