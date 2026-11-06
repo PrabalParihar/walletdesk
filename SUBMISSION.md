@@ -48,6 +48,7 @@ git add services/cre/desk-guard/SIMULATION.md && git commit -m "docs(cre): desk-
 ```
 
 Run it from the WalletDesk repo, not from `~/chainlink-cre`. The workflow there is a different, unrelated project.
+It needs Bun 1.4 or newer (`bun upgrade`), because `desk-guard/bun.lock` is lockfile format 2.
 
 ## Requirement map
 
