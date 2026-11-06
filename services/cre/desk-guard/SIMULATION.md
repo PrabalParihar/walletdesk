@@ -1,8 +1,15 @@
 # Simulation record
 
-**Status: `cre workflow simulate` has NOT been run successfully yet.** The official CRE CLI v1.39.0 binary is installed in the build sandbox. Its SHA-256 matches the release `checksums.txt`. Simulation needs a logged-in CRE account, and the sandbox has none. The CLI rejects the command before it compiles anything. Nothing below is simulator output except the authentication error. To produce the missing proof, run the commands in "To do" and paste their output here.
+**Status: passed.** `cre workflow simulate desk-guard --target unichain-sepolia` ran successfully on the team's
+machine on 6 Nov 2026 (CRE CLI v1.39.0); the full output is the last section of this file. The run fetched Coinbase and
+Kraken, reached a consensus reference price, read the live `DeskPriceFeed` on Unichain Sepolia
+(`0xb1749dDDd701D99a9f318610a7A6962b11409c82`, see `docs/DEPLOYMENTS.md`), and produced the report to write
+(`action: written`). Simulation mode does not broadcast, so the report's `tx` is `0x`.
 
-## To do (on a machine with `cre login`)
+The first attempts failed before the workflow started: zod's `z.string().url()` needs the global `URL`, which the CRE
+WASM engine lacks. Fixed in `main.ts`; `config.test.ts` reproduces it. The sandbox notes further down predate the run.
+
+## Rerun (on a machine with `cre login`)
 
 One command against the live Unichain Sepolia feed (config committed, addresses in `docs/DEPLOYMENTS.md`). It
 appends the real output to the end of this file:

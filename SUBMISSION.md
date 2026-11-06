@@ -22,7 +22,7 @@ Done and verified:
 | --- | --- | --- | --- |
 | 1 | Live deploy on Unichain mainnet: deploy, reference, ship, register, two overflow swaps | Claude, burner key funded by the team | Runs automatically once the burner `0xdC8415C8A712cDdD6Bf503d45b54DB29A1a4e759` holds ≥ 0.0005 ETH (full run costs ≈ 0.0001 ETH). Record: `docs/DEPLOYMENTS.md` |
 | 2 | Same on Unichain Sepolia (self-deployed Aqua), then hand the feed to the CRE mock forwarder | Claude, burner funded with Sepolia ETH | **Done.** 31 verified transactions in `docs/DEPLOYMENTS.md` |
-| 3 | `cre workflow simulate` (Chainlink requires a successful run) | You, on your Mac (your `cre login` lives there) | One command: `./services/cre/simulate-sepolia.sh`. It appends the output to `SIMULATION.md`; then commit and push |
+| 3 | `cre workflow simulate` (Chainlink requires a successful run) | You, on your Mac (your `cre login` lives there) | **Done.** Passed against the live Sepolia feed; committed from the team machine (`21869ed`). Output in `services/cre/desk-guard/SIMULATION.md` |
 | 4 | Cursor prompts | Claude | Done as a labelled reconstruction: `docs/prompts/01-cursor-v1.md` (the session was not exported) |
 | 5 | Your own commits from here (SIMULATION.md output, any tweak). No squash or history rewrite | You | — |
 | 6 | Video: 2–4 min, ≥720p, your voice, not sped up, not a phone | You | `./script/demo.sh`, then use the **Demo maker / Demo taker** buttons; script in `docs/WALKTHROUGH.md` |
@@ -76,7 +76,7 @@ It needs Bun 1.4 or newer (`bun upgrade`), because `desk-guard/bun.lock` is lock
 | --- | --- |
 | CRE workflow used as an orchestration layer, meaningfully used | Done. It is the hook's off-chain price guard; without a fresh reference, desks do not fill |
 | Connects a blockchain with an external API | Done. Coinbase + Kraken HTTP → `DeskPriceFeed` on chain |
-| Successful simulation via CRE CLI, or a live deployment | Step 3, on your logged-in machine |
+| Successful simulation via CRE CLI, or a live deployment | Done: `services/cre/desk-guard/SIMULATION.md` (run against the live Sepolia feed) |
 
 ### ETHGlobal
 
