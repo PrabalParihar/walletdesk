@@ -16,9 +16,21 @@ const mono = Geist_Mono({
   variable: "--font-geist-mono",
 });
 
+const description =
+  "A Uniswap v4 hook that fills the overflow of large swaps from market makers' wallets through 1inch Aqua, at a price checked by Chainlink CRE. Live on Unichain Sepolia.";
+
+/** Absolute base for the Open Graph image. Set NEXT_PUBLIC_SITE_URL when hosting; Vercel's own URL is used otherwise. */
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ??
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "http://localhost:43127");
+
 export const metadata: Metadata = {
-  title: "WalletDesk",
-  description: "Turn idle tokens in your wallet into a Uniswap market. Uniswap v4 hook + 1inch Aqua SwapVM + Chainlink CRE price guard.",
+  metadataBase: new URL(siteUrl),
+  title: { default: "WalletDesk: wallets back Uniswap pools without depositing", template: "%s · WalletDesk" },
+  description,
+  applicationName: "WalletDesk",
+  openGraph: { type: "website", siteName: "WalletDesk", title: "WalletDesk", description },
+  twitter: { card: "summary_large_image", title: "WalletDesk", description },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

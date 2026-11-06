@@ -22,8 +22,11 @@ import {
   stockRouterAbi,
   type Deployment,
 } from "@/lib/contracts";
+import { Amount } from "@/components/amount";
+import { CopyButton } from "@/components/copy-button";
 import { MintTestTokens } from "@/components/mint-test-tokens";
 import { ExternalLink, SplitBar } from "@/components/site";
+import { TxSteps, useTxSteps } from "@/components/tx-steps";
 import { formatAmount, formatPriceX18 } from "@/lib/desk";
 import { addressUrl, txUrl } from "@/lib/live";
 import { useDeployment } from "@/lib/use-deployment";
@@ -80,7 +83,8 @@ export default function LivePage() {
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [status, setStatus] = useState<string | null>(null);
+  const [swapError, setSwapError] = useState<string | null>(null);
+  const tx = useTxSteps();
   const [swapHash, setSwapHash] = useState<string | null>(null);
 
   const deployment = state.status === "ready" ? state.deployment : null;
@@ -171,7 +175,7 @@ export default function LivePage() {
 
   async function runSwap() {
     if (!deployment || !address || !walletClient) {
-      setError("Connect the taker wallet on the demo chain.");
+      setSwapError("Connect the taker wallet on the demo chain.");
       return;
     }
     let amount: bigint;
@@ -181,16 +185,17 @@ export default function LivePage() {
       amount = 0n;
     }
     if (amount === 0n) {
-      setError("Enter a swap size.");
+      setSwapError("Enter a swap size.");
       return;
     }
     const spender = route === "stock" && deployment.stockRouter ? deployment.stockRouter : deployment.overflowRouter;
     setBusy(true);
-    setError(null);
+    setSwapError(null);
     setSwapHash(null);
+    tx.reset();
     try {
       if (chainId !== deployment.chainId) {
-        setStatus("Switching network");
+        tx.start("Switch network");
         await switchChainAsync({ chainId: deployment.chainId });
       }
       const allowance = await walletClient.readContract({
@@ -200,7 +205,7 @@ export default function LivePage() {
         args: [address, spender],
       });
       if (allowance < amount) {
-        setStatus("Approving the router");
+        tx.start(`Approve ${deployment.symbol0} for the router`);
         const hash = await writeContractAsync({
           address: deployment.token0,
           abi: erc20Abi,
@@ -208,11 +213,12 @@ export default function LivePage() {
           args: [spender, amount],
           chainId: deployment.chainId,
         });
+        tx.sent(hash);
         await walletClient.waitForTransactionReceipt({ hash });
       }
       let hash: `0x${string}`;
       if (route === "stock" && deployment.stockRouter) {
-        setStatus("Swapping through Uniswap's PoolSwapTest router");
+        tx.start("Swap through Uniswap's PoolSwapTest router");
         hash = await writeContractAsync({
           address: deployment.stockRouter,
           abi: stockRouterAbi,
@@ -226,7 +232,7 @@ export default function LivePage() {
           chainId: deployment.chainId,
         });
       } else {
-        setStatus("Swapping through OverflowRouter");
+        tx.start("Swap through OverflowRouter");
         hash = await writeContractAsync({
           address: deployment.overflowRouter,
           abi: routerAbi,
@@ -235,12 +241,13 @@ export default function LivePage() {
           chainId: deployment.chainId,
         });
       }
+      tx.sent(hash);
       await walletClient.waitForTransactionReceipt({ hash });
+      tx.finish();
       setSwapHash(hash);
-      setStatus(null);
     } catch (caught) {
-      setStatus(null);
-      setError(shortError(caught));
+      tx.fail();
+      setSwapError(shortError(caught));
     } finally {
       setBusy(false);
     }
@@ -254,6 +261,10 @@ export default function LivePage() {
 
   const explorer = deployment?.explorer;
   const capNumber = guard ? Number(formatUnits(guard.cap, d0)) : 1;
+  const sizeNumber = Number(swapSize.trim());
+  const plannedSize = Number.isFinite(sizeNumber) && sizeNumber > 0 ? sizeNumber : 0;
+  const plannedPool = Math.min(plannedSize, capNumber);
+  const plannedDesk = Math.max(plannedSize - capNumber, 0);
 
   return (
     <div className="flex flex-col gap-6">
@@ -265,20 +276,31 @@ export default function LivePage() {
         </p>
         {deployment ? (
           <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-[13px]">
-            <ExternalLink href={addressUrl(explorer, deployment.hook)}>OverflowHook</ExternalLink>
-            <ExternalLink href={addressUrl(explorer, deployment.priceFeed ?? deployment.hook)}>DeskPriceFeed (CRE)</ExternalLink>
-            <ExternalLink href={addressUrl(explorer, deployment.maker)}>Maker wallet</ExternalLink>
+            <span className="inline-flex items-center gap-1">
+              <ExternalLink href={addressUrl(explorer, deployment.hook)}>OverflowHook</ExternalLink>
+              <CopyButton value={deployment.hook} label="OverflowHook address" />
+            </span>
+            {deployment.priceFeed ? (
+              <span className="inline-flex items-center gap-1">
+                <ExternalLink href={addressUrl(explorer, deployment.priceFeed)}>DeskPriceFeed (CRE)</ExternalLink>
+                <CopyButton value={deployment.priceFeed} label="DeskPriceFeed address" />
+              </span>
+            ) : null}
+            <span className="inline-flex items-center gap-1">
+              <ExternalLink href={addressUrl(explorer, deployment.maker)}>Maker wallet</ExternalLink>
+              <CopyButton value={deployment.maker} label="maker wallet address" />
+            </span>
             <MintTestTokens deployment={deployment} which="token0" />
           </div>
         ) : null}
       </section>
-      <div className="grid gap-6 lg:grid-cols-[1fr_1fr]">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
       <div className="grid content-start gap-6">
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>Maker wallet</CardTitle>
-              <Badge className="bg-[#00BBFF] text-white">{balances ? (fill ? "live" : "no fills yet") : loading ? "loading" : "empty"}</Badge>
+              <Badge className="bg-[#0B6E99] text-white">{balances ? (fill ? "live" : "no fills yet") : loading ? "loading" : "empty"}</Badge>
             </div>
           </CardHeader>
           <CardContent className="space-y-3 text-[13px]">
@@ -364,11 +386,11 @@ export default function LivePage() {
             <div className="overflow-hidden rounded-[10px] border border-black/8 text-[13px]">
               <table className="w-full">
                 <tbody>
-                  <Line label="Maker" value={fill.maker} />
+                  <Line label="Maker" value={fill.maker} copy="maker address" />
                   <Line label="Residual in" value={`${formatAmount(fill.residualIn, d0, 6)} ${deployment?.symbol0 ?? ""}`} />
                   <Line label="Shelf out (pulled)" value={`${formatAmount(fill.filledOut, d1, 6)} ${deployment?.symbol1 ?? ""}`} />
                   <Line label="Maker spread (stays in wallet)" value={`${formatAmount(fill.feeOut, d1, 6)} ${deployment?.symbol1 ?? ""}`} />
-                  <Line label="Fill id" value={fill.fillId} />
+                  <Line label="Fill id" value={fill.fillId} copy="fill id" />
                 </tbody>
               </table>
             </div>
@@ -407,14 +429,36 @@ export default function LivePage() {
             </div>
           </div>
           <div className="grid gap-1.5">
-            <Label>Swap size, {deployment?.symbol0 ?? "input"} in</Label>
-            <Input value={swapSize} onChange={(event) => setSwapSize(event.target.value)} />
+            <Label htmlFor="swap-size">Swap size, {deployment?.symbol0 ?? "input"} in</Label>
+            <Input id="swap-size" inputMode="decimal" autoComplete="off" value={swapSize} onChange={(event) => setSwapSize(event.target.value)} />
           </div>
-          {status ? <Notice tone="info">{status}…</Notice> : null}
+          {plannedSize > 0 && guard ? (
+            <div className="grid gap-2 rounded-[10px] border border-black/8 p-3">
+              <p className="text-[12px] font-medium text-[#5D5D66]">How this swap would split</p>
+              <SplitBar total={plannedSize} poolPart={plannedPool} symbol={deployment?.symbol0 ?? ""} />
+              <p className="text-[13px] leading-relaxed text-[#4A4A52]">
+                {plannedDesk > 0 ? (
+                  <>
+                    The pool fills <Amount value={plannedPool} className="font-medium text-[#18181B]" /> {deployment?.symbol0}; the best desk that
+                    passes the price guard fills the other <Amount value={plannedDesk} className="font-medium text-[#18181B]" /> {deployment?.symbol0}.
+                    If no desk passes, the pool fills it all.
+                  </>
+                ) : (
+                  <>At or under the pool cap: the pool fills all of it and no desk is asked.</>
+                )}
+              </p>
+            </div>
+          ) : null}
+          <TxSteps steps={tx.steps} explorer={explorer} />
+          {swapError ? <Notice tone="error">{swapError}</Notice> : null}
           {swapHash ? (
             <Notice tone="ok">
               Swap mined.{" "}
-              {txUrl(explorer, swapHash) ? <ExternalLink href={txUrl(explorer, swapHash)}>View on the explorer</ExternalLink> : swapHash}
+              {txUrl(explorer, swapHash) ? (
+                <ExternalLink href={txUrl(explorer, swapHash)}>View on the explorer</ExternalLink>
+              ) : (
+                <span className="font-mono text-xs break-all">{swapHash}</span>
+              )}
             </Notice>
           ) : null}
           <Button type="button" onClick={() => void runSwap()} disabled={busy || !isConnected || !deployment}>
@@ -447,17 +491,27 @@ function BalanceRow({
   return (
     <tr className="border-t border-black/8">
       <td className="px-3 py-2">{symbol}</td>
-      <td className="px-3 py-2 font-mono">{formatAmount(wallet, decimals)}</td>
-      <td className="px-3 py-2 font-mono">{virtual === null ? "not shipped" : formatAmount(virtual, decimals)}</td>
+      <td className="px-3 py-2 font-mono tabular-nums">{formatAmount(wallet, decimals)}</td>
+      <td className="px-3 py-2 font-mono tabular-nums">{virtual === null ? "not shipped" : formatAmount(virtual, decimals)}</td>
     </tr>
   );
 }
 
-function Line({ label, value }: { label: string; value: string }) {
+function Line({ label, value, copy }: { label: string; value: string; copy?: string }) {
   return (
     <tr className="border-t border-black/8 first:border-t-0">
-      <td className="px-3 py-2 text-[#5D5D66]">{label}</td>
-      <td className="px-3 py-2 text-right font-mono text-xs break-all">{value}</td>
+      <td className="px-3 py-2 align-top text-[#5D5D66]">{label}</td>
+      <td className="px-3 py-2 text-right font-mono text-xs break-all tabular-nums">
+        {copy ? (
+          <span className="inline-flex items-center justify-end gap-1">
+            {/* The copy button carries the full value; the cell shows both ends, which is what people compare. */}
+            <span title={value}>{value.length > 20 ? `${value.slice(0, 10)}…${value.slice(-8)}` : value}</span>
+            <CopyButton value={value} label={copy} className="-my-1" />
+          </span>
+        ) : (
+          value
+        )}
+      </td>
     </tr>
   );
 }

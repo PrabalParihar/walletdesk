@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { parseUnits } from "viem";
+import { useId, useState } from "react";
+import { formatUnits, parseUnits } from "viem";
 import { useAccount, useChainId, usePublicClient, useSwitchChain, useWriteContract } from "wagmi";
 
 import { Notice } from "@/components/notice";
@@ -11,8 +11,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { aquaAbi, builderAbi, erc20Abi, hookAbi, poolKey, shortError } from "@/lib/contracts";
+import { Amount } from "@/components/amount";
+import { CopyButton } from "@/components/copy-button";
 import { MintTestTokens } from "@/components/mint-test-tokens";
 import { ExternalLink } from "@/components/site";
+import { TxSteps, useTxSteps } from "@/components/tx-steps";
 import { encodeProgram, formatPriceX18, priceToX18, programHash, quoteExactIn, STORAGE_KEY, type DeskDraft } from "@/lib/desk";
 import { txUrl } from "@/lib/live";
 import { useDeployment } from "@/lib/use-deployment";
@@ -45,7 +48,7 @@ export default function DeskPage() {
   const client = usePublicClient();
   const { writeContractAsync } = useWriteContract();
   const [form, setForm] = useState(defaults);
-  const [status, setStatus] = useState<string | null>(null);
+  const tx = useTxSteps();
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<{ hash: string; strategy: `0x${string}` } | null>(null);
@@ -91,9 +94,10 @@ export default function DeskPage() {
     setBusy(true);
     setError(null);
     setResult(null);
+    tx.reset();
     try {
       if (chainId !== deployment.chainId) {
-        setStatus("Switching network");
+        tx.start("Switch network");
         await switchChainAsync({ chainId: deployment.chainId });
       }
       const block = await client.getBlock();
@@ -109,7 +113,7 @@ export default function DeskPage() {
           args: [address, deployment.aqua],
         });
         if (allowance < shelf) {
-          setStatus(`Approving ${token === deployment.token0 ? deployment.symbol0 : deployment.symbol1}`);
+          tx.start(`Approve ${token === deployment.token0 ? deployment.symbol0 : deployment.symbol1} for Aqua (allowance only, no transfer)`);
           const hash = await writeContractAsync({
             address: token,
             abi: erc20Abi,
@@ -117,11 +121,12 @@ export default function DeskPage() {
             args: [deployment.aqua, shelf],
             chainId: deployment.chainId,
           });
+          tx.sent(hash);
           await client.waitForTransactionReceipt({ hash });
         }
       }
 
-      setStatus("Packing the DeskBand program");
+      tx.start("Pack the DeskBand program (read only)");
       const built = await client.readContract({
         address: deployment.orderBuilder,
         abi: builderAbi,
@@ -132,7 +137,7 @@ export default function DeskPage() {
       const data = built[1];
       const strategy = built[2];
 
-      setStatus("Shipping to Aqua");
+      tx.start("Ship the strategy to Aqua (virtual balances, no transfer)");
       const shipHash = await writeContractAsync({
         address: deployment.aqua,
         abi: aquaAbi,
@@ -140,9 +145,10 @@ export default function DeskPage() {
         args: [deployment.swapVm, strategy, [deployment.token0, deployment.token1], [shelf0, shelf1]],
         chainId: deployment.chainId,
       });
+      tx.sent(shipHash);
       await client.waitForTransactionReceipt({ hash: shipHash });
 
-      setStatus("Registering the desk on the hook");
+      tx.start("Register the desk on OverflowHook");
       const registerHash = await writeContractAsync({
         address: deployment.hook,
         abi: hookAbi,
@@ -150,7 +156,9 @@ export default function DeskPage() {
         args: [poolKey(deployment), { maker: address, traits, data }, maxDeviationBps],
         chainId: deployment.chainId,
       });
+      tx.sent(registerHash);
       await client.waitForTransactionReceipt({ hash: registerHash });
+      tx.finish();
 
       const draft: DeskDraft = {
         symbolIn: deployment.symbol0,
@@ -168,9 +176,8 @@ export default function DeskPage() {
       };
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(draft));
       setResult({ hash: registerHash, strategy });
-      setStatus(null);
     } catch (caught) {
-      setStatus(null);
+      tx.fail();
       setError(shortError(caught));
     } finally {
       setBusy(false);
@@ -217,7 +224,7 @@ export default function DeskPage() {
           </div>
         ) : null}
       </section>
-    <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+    <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
       <Card className="shadow-[0_8px_30px_rgba(0,0,0,0.04)]">
         <CardHeader>
           <CardTitle>Ship a desk</CardTitle>
@@ -250,7 +257,7 @@ export default function DeskPage() {
             <Field label="Fee bps" value={form.feeBps} onChange={(value) => set("feeBps", value)} />
             <Field label="Decay half life, seconds (0 = off)" value={form.halfLife} onChange={(value) => set("halfLife", value)} />
           </div>
-          {status ? <Notice tone="info">{status}…</Notice> : null}
+          <TxSteps steps={tx.steps} explorer={state.status === "ready" ? state.deployment.explorer : undefined} />
           {error ? <Notice tone="error">{error}</Notice> : null}
           <div className="flex flex-wrap gap-2">
             <Button type="button" onClick={() => void ship()} disabled={busy || !isConnected || state.status !== "ready"}>
@@ -270,8 +277,8 @@ export default function DeskPage() {
         <CardContent className="space-y-3 text-[13px]">
           {preview && !("error" in preview) ? (
             <>
-              <p className="text-[28px] font-semibold tracking-tight">
-                {formatPriceX18((preview.amountOut * 10n ** 18n) / 10n ** BigInt(d1), 18, 18, 4)} {sym1}
+              <p className="text-[28px] font-semibold tracking-tight tabular-nums">
+                <Amount value={Number(formatUnits(preview.amountOut, d1))} /> {sym1}
               </p>
               <Row label="Band price now" value={`${formatPriceX18(preview.priceX18, d0, d1)} ${sym1} per ${sym0}`} />
               <Row label="Your spread (kept in wallet)" value={`${formatPriceX18((preview.feeOut * 10n ** 18n) / 10n ** BigInt(d1), 18, 18, 6)} ${sym1}`} />
@@ -296,7 +303,9 @@ export default function DeskPage() {
           <Row label="Wallet movement" value="None on ship" />
           <Row label="Registry" value={state.status === "ready" ? state.deployment.aqua : "Aqua"} />
           <div>
-            <p className="text-[#5D5D66]">Strategy bytes</p>
+            <p className="flex items-center gap-1 text-[#5D5D66]">
+              Strategy bytes {result ? <CopyButton value={result.strategy} label="strategy bytes" /> : null}
+            </p>
             <p className="mt-1 break-all font-mono text-xs">{result?.strategy ?? "Ship to write the order Aqua stores."}</p>
           </div>
           <div>
@@ -324,10 +333,13 @@ export default function DeskPage() {
 }
 
 function Field({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+  const id = useId();
   return (
     <div className="grid gap-1.5">
-      <Label className="text-[12px] text-[#5D5D66]">{label}</Label>
-      <Input value={value} onChange={(event) => onChange(event.target.value)} />
+      <Label htmlFor={id} className="text-[12px] text-[#5D5D66]">
+        {label}
+      </Label>
+      <Input id={id} inputMode="decimal" autoComplete="off" value={value} onChange={(event) => onChange(event.target.value)} />
     </div>
   );
 }

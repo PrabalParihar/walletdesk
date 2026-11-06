@@ -152,7 +152,7 @@ node --test services/keeper/scale.test.mjs services/keeper/reference.test.mjs
 | `/` | Overview: problem, solution, live proof. ![](docs/screenshots/landing.png) |
 | `/how` | How a swap is split between the pool and a maker desk, step by step. ![](docs/screenshots/how.png) |
 | `/desk` | Make a desk: approve Aqua, ship a DeskBand band, register it with a max deviation. ![](docs/screenshots/desk.png) |
-| `/live` | Live overflow: wallet vs Aqua balances, the price guard (pool spot, CRE reference, last skip), how the last swap split between pool and desk, test tokens, and a swap through OverflowRouter or Uniswap's PoolSwapTest. ![](docs/screenshots/live.png) |
+| `/live` | Live overflow: wallet vs Aqua balances, the price guard (pool spot, CRE reference, last skip), how the last swap split between pool and desk, a preview of how your swap would split, test tokens, and a swap through OverflowRouter or Uniswap's PoolSwapTest with each transaction step shown. ![](docs/screenshots/live.png) |
 | `/desk` quote preview | As you type a band and fee, the desk shows what it would pay for a 4 DA overflow, using the same math as the on-chain opcode. |
 | `/fees` | Optional USDC rebates: claim from `FeeShareTreasury`. |
 
