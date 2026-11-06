@@ -114,3 +114,14 @@ export function quoteExactIn(input: {
 export function programHash(program: `0x${string}`): `0x${string}` {
   return keccak256(program);
 }
+
+/** Token amount for display: thousands separators, at most `maxFrac` decimals, trailing zeros trimmed. */
+export function formatAmount(value: bigint, decimals: number, maxFrac = 4): string {
+  const negative = value < 0n;
+  const abs = negative ? -value : value;
+  const base = 10n ** BigInt(decimals);
+  const whole = abs / base;
+  const frac = (abs % base).toString().padStart(decimals, "0").slice(0, maxFrac).replace(/0+$/, "");
+  const grouped = whole.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  return `${negative ? "-" : ""}${grouped}${frac ? `.${frac}` : ""}`;
+}

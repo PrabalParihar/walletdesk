@@ -7,14 +7,15 @@ import { mock } from "wagmi/connectors";
 
 import { Button } from "@/components/ui/button";
 import { networkLabel, networkMode } from "@/lib/chains";
+import { addressUrl } from "@/lib/live";
 import { useDeployment } from "@/lib/use-deployment";
 import { cn } from "@/lib/utils";
 
 const links = [
-  { href: "/desk", label: "Ship" },
+  { href: "/how", label: "How it works" },
+  { href: "/desk", label: "Make a desk" },
   { href: "/live", label: "Live" },
-  { href: "/fees", label: "Fees" },
-  { href: "/docs", label: "Docs" },
+  { href: "/fees", label: "Rebates" },
 ];
 
 export function Shell({ children }: { children: React.ReactNode }) {
@@ -42,9 +43,18 @@ export function Shell({ children }: { children: React.ReactNode }) {
             <Link href="/" className="text-[15px] font-semibold tracking-tight">
               WalletDesk
             </Link>
-            <span className="rounded-full bg-[#00BBFF]/15 px-2 py-0.5 text-[11px] font-medium text-[#0B6E99]">
-              {networkLabel[networkMode]}
-            </span>
+            {(() => {
+              const hookUrl =
+                deployment.status === "ready" ? addressUrl(deployment.deployment.explorer, deployment.deployment.hook) : undefined;
+              const badge = "rounded-full bg-[#00BBFF]/15 px-2 py-0.5 text-[11px] font-medium text-[#0B6E99]";
+              return hookUrl ? (
+                <a href={hookUrl} target="_blank" rel="noopener noreferrer" className={`${badge} hover:bg-[#00BBFF]/25`} title="Open the live OverflowHook on the explorer">
+                  {networkLabel[networkMode]} · live
+                </a>
+              ) : (
+                <span className={badge}>{networkLabel[networkMode]}</span>
+              );
+            })()}
           </div>
           <nav className="hidden items-center gap-1 sm:flex">
             {links.map((link) => (

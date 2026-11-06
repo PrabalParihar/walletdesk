@@ -22,7 +22,10 @@ import {
   stockRouterAbi,
   type Deployment,
 } from "@/lib/contracts";
-import { formatPriceX18 } from "@/lib/desk";
+import { MintTestTokens } from "@/components/mint-test-tokens";
+import { ExternalLink, SplitBar } from "@/components/site";
+import { formatAmount, formatPriceX18 } from "@/lib/desk";
+import { addressUrl, txUrl } from "@/lib/live";
 import { useDeployment } from "@/lib/use-deployment";
 
 type Fill = {
@@ -249,14 +252,33 @@ export default function LivePage() {
     guard && guard.referenceAge !== null ? guard.referenceAge <= guard.maxReferenceAge : false;
   const lastSkip = skips[0];
 
+  const explorer = deployment?.explorer;
+  const capNumber = guard ? Number(formatUnits(guard.cap, d0)) : 1;
+
   return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_1fr]">
+    <div className="flex flex-col gap-6">
+      <section className="rounded-[14px] border border-black/8 bg-[#FAFAFB] p-5 md:p-6">
+        <h1 className="text-2xl font-semibold tracking-tight md:text-[28px]">Live overflow</h1>
+        <p className="mt-2 max-w-3xl text-[14px] leading-relaxed text-[#4A4A52]">
+          This page reads the deployed contracts directly. The maker&apos;s tokens sit in a normal wallet; Aqua only tracks a virtual
+          shelf. Send a swap larger than the pool cap and the hook fills the overflow from that wallet, if the price guard agrees.
+        </p>
+        {deployment ? (
+          <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-[13px]">
+            <ExternalLink href={addressUrl(explorer, deployment.hook)}>OverflowHook</ExternalLink>
+            <ExternalLink href={addressUrl(explorer, deployment.priceFeed ?? deployment.hook)}>DeskPriceFeed (CRE)</ExternalLink>
+            <ExternalLink href={addressUrl(explorer, deployment.maker)}>Maker wallet</ExternalLink>
+            <MintTestTokens deployment={deployment} which="token0" />
+          </div>
+        ) : null}
+      </section>
+      <div className="grid gap-6 lg:grid-cols-[1fr_1fr]">
       <div className="grid content-start gap-6">
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle>Desk status</CardTitle>
-              <Badge className="bg-[#00BBFF] text-white">{loading ? "loading" : fill ? "live" : "empty"}</Badge>
+              <CardTitle>Maker wallet</CardTitle>
+              <Badge className="bg-[#00BBFF] text-white">{balances ? (fill ? "live" : "no fills yet") : loading ? "loading" : "empty"}</Badge>
             </div>
           </CardHeader>
           <CardContent className="space-y-3 text-[13px]">
@@ -309,12 +331,12 @@ export default function LivePage() {
                     !deployment?.priceFeed
                       ? "no feed"
                       : guard?.referenceX18
-                        ? `${formatPriceX18(guard.referenceX18, d0, d1)} (${guard.referenceAge}s old, max ${guard.maxReferenceAge}s)`
+                        ? `${formatPriceX18(guard.referenceX18, d0, d1)} · ${humanAge(guard.referenceAge ?? 0)} old`
                         : "none yet"
                   }
                 />
                 <Line label="Desks on this pool" value={guard ? guard.deskCount.toString() : "…"} />
-                <Line label="Pool cap, input" value={guard ? formatUnits(guard.cap, d0) : "…"} />
+                <Line label="Pool cap, input" value={guard ? `${formatAmount(guard.cap, d0)} ${deployment?.symbol0 ?? ""}` : "…"} />
                 <Line label="Last skip" value={lastSkip ? `${skipReasons[lastSkip.reason] ?? lastSkip.reason}` : "none"} />
               </tbody>
             </table>
@@ -325,19 +347,27 @@ export default function LivePage() {
         <CardHeader>
           <CardTitle>Overflow fill</CardTitle>
           <p className="text-[13px] text-[#5D5D66]">
-            Amounts above the pool cap pull the best maker shelf. Any v4 router works: the hook advances the residual from PoolManager
-            reserves and the router settles it at the end of the unlock.
+            Amounts above the pool cap are filled from the best maker desk. Try both routers: the desk fills Uniswap&apos;s own
+            PoolSwapTest the same way it fills ours.
           </p>
         </CardHeader>
         <CardContent className="grid gap-4">
+          {fill ? (
+            <SplitBar
+              total={capNumber + Number(formatUnits(fill.residualIn, d0))}
+              poolPart={capNumber}
+              symbol={deployment?.symbol0 ?? ""}
+              caption="How the last overflow swap was split."
+            />
+          ) : null}
           {fill ? (
             <div className="overflow-hidden rounded-[10px] border border-black/8 text-[13px]">
               <table className="w-full">
                 <tbody>
                   <Line label="Maker" value={fill.maker} />
-                  <Line label="Residual in" value={formatUnits(fill.residualIn, d0)} />
-                  <Line label="Shelf out (pulled)" value={formatUnits(fill.filledOut, d1)} />
-                  <Line label="Maker spread (stays in wallet)" value={formatUnits(fill.feeOut, d1)} />
+                  <Line label="Residual in" value={`${formatAmount(fill.residualIn, d0, 6)} ${deployment?.symbol0 ?? ""}`} />
+                  <Line label="Shelf out (pulled)" value={`${formatAmount(fill.filledOut, d1, 6)} ${deployment?.symbol1 ?? ""}`} />
+                  <Line label="Maker spread (stays in wallet)" value={`${formatAmount(fill.feeOut, d1, 6)} ${deployment?.symbol1 ?? ""}`} />
                   <Line label="Fill id" value={fill.fillId} />
                 </tbody>
               </table>
@@ -381,14 +411,26 @@ export default function LivePage() {
             <Input value={swapSize} onChange={(event) => setSwapSize(event.target.value)} />
           </div>
           {status ? <Notice tone="info">{status}…</Notice> : null}
-          {swapHash ? <Notice tone="ok">Swap mined. {swapHash}</Notice> : null}
+          {swapHash ? (
+            <Notice tone="ok">
+              Swap mined.{" "}
+              {txUrl(explorer, swapHash) ? <ExternalLink href={txUrl(explorer, swapHash)}>View on the explorer</ExternalLink> : swapHash}
+            </Notice>
+          ) : null}
           <Button type="button" onClick={() => void runSwap()} disabled={busy || !isConnected || !deployment}>
             {busy ? "Swapping" : isConnected ? "Run overflow" : "Connect the taker"}
           </Button>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
+}
+
+function humanAge(seconds: number): string {
+  if (seconds < 120) return `${seconds}s`;
+  if (seconds < 7200) return `${Math.round(seconds / 60)} min`;
+  return `${Math.round(seconds / 3600)} h`;
 }
 
 function BalanceRow({
@@ -405,8 +447,8 @@ function BalanceRow({
   return (
     <tr className="border-t border-black/8">
       <td className="px-3 py-2">{symbol}</td>
-      <td className="px-3 py-2 font-mono">{formatUnits(wallet, decimals)}</td>
-      <td className="px-3 py-2 font-mono">{virtual === null ? "not shipped" : formatUnits(virtual, decimals)}</td>
+      <td className="px-3 py-2 font-mono">{formatAmount(wallet, decimals)}</td>
+      <td className="px-3 py-2 font-mono">{virtual === null ? "not shipped" : formatAmount(virtual, decimals)}</td>
     </tr>
   );
 }

@@ -32,6 +32,25 @@ Generated from Foundry broadcast receipts. Every hash links to the explorer.
 Aqua is not deployed on Unichain Sepolia, so the registry above is the unmodified 1inch Aqua deployed by
 `DeployUnichainSepolia` (`DEPLOY_AQUA=true`). On Unichain mainnet the desk uses the live Aqua registry.
 
+### Maintenance (6 Nov 2026, about 21:35 IST)
+
+The Chainlink CRE workflow is simulated, not deployed to a DON (deploy access is pending), so nothing refreshes the
+Sepolia reference on a schedule. Once it was more than an hour old, the hook correctly failed closed and skipped every
+desk. To keep the public demo usable, the hook owner set the demo's `maxReferenceAge` to 30 days, took the forwarder
+role back for one report with a fresh Coinbase + Kraken median, and returned it to the CRE simulation forwarder.
+Production settings stay one hour with CRE writing every 30 seconds.
+
+| Step | Transaction |
+| --- | --- |
+| `setPriceFeed(feed, 2592000)` (30-day demo window) | [`0xf202687a…`](https://sepolia.uniscan.xyz/tx/0xf202687a5f610698e9c9edb8e59d5b656dffbe9d6620379909e20b4afaa9b6d8) |
+| `setForwarder(burner)` | [`0xf30bace4…`](https://sepolia.uniscan.xyz/tx/0xf30bace4abab7778822e6e84baa63393a73c7d35664362acd0930fb8df4677ca) |
+| `setForwarder(CRE forwarder)` (a report in between failed on an RPC race) | [`0x4af7b447…`](https://sepolia.uniscan.xyz/tx/0x4af7b447dad5bceba7e20d0db50a2b10027ac1ec981e3b9b9f8f71ef679c4cc7) |
+| `setForwarder(burner)` | [`0xa88216a5…`](https://sepolia.uniscan.xyz/tx/0xa88216a5de2ba8ade95ba7b6a589816dc4780ce9e20be582e19d09655ae9edc7) |
+| `onReport` fresh reference 0.998693 | [`0x4ab68b07…`](https://sepolia.uniscan.xyz/tx/0x4ab68b073018bc137b59ea5eef87b0b7f55d9f283b39e0747581ac9e5fef440f) |
+| `setForwarder(CRE forwarder)` | [`0x2cbe51ec…`](https://sepolia.uniscan.xyz/tx/0x2cbe51ec760c0a9bf05182e7b011f5d91767ebc9c9108b00ec8234c27f6b0895) |
+
+After these: forwarder `0x6E9EE680ef59ef64Aa8C7371279c27E496b5eDc1`, reference 0.998693, `maxReferenceAge` 2592000.
+
 ### All transactions
 
 | Script | Step | Transaction |

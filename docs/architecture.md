@@ -2,7 +2,8 @@
 
 Idle wallet inventory stays with the maker. A Uniswap v4 hook fills only the part of a swap the pool is willing to
 take. The residual is priced by a custom SwapVM opcode and settled from the best maker desk through the official
-Aqua registry, after a price guard against the pool spot and a Chainlink CRE reference. Drawing:
+Aqua registry, after a price guard against the pool spot and a Chainlink CRE reference. Live addresses and
+transactions: `docs/DEPLOYMENTS.md`. Drawing:
 `docs/architecture.svg` / `docs/architecture.png`.
 
 ```mermaid

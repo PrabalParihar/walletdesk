@@ -60,10 +60,22 @@ The demo runs on an anvil fork of Unichain mainnet, so `project.yaml` registers 
 
 A read-only `debug_traceCall` used state overrides to route a report through the Unichain Sepolia mock forwarder code into the `DeskPriceFeed` deployed on the local fork. The ERC165 answers were 1, 0, 1, and `onReport` ran with no error.
 
+## Verified
+
+- **`cre workflow simulate desk-guard --target unichain-sepolia` passed** on the team's machine (CRE CLI v1.39.0)
+  against the live `DeskPriceFeed` `0xb1749dDDd701D99a9f318610a7A6962b11409c82`: Coinbase 0.998950, Kraken 0.998951,
+  consensus 0.998950, on-chain reference read back (`998615000000000000`), report produced (`action: written`). Full
+  output: [SIMULATION.md](../services/cre/desk-guard/SIMULATION.md). Rerun: `./services/cre/simulate-sepolia.sh`.
+- The first attempts failed before the workflow started: zod's `z.string().url()` needs the global `URL`, which the
+  CRE WASM engine does not provide. Source URLs are now validated with a plain regex, and `config.test.ts` reproduces
+  the engine by deleting `globalThis.URL`.
+- `cre workflow build` (TypeScript to WASM) and 19 SDK unit tests pass.
+
 ## Not verified
 
-- No `cre workflow simulate` run yet. The sandbox has no CRE login, and the CLI stops at authentication. `cre workflow build` (TypeScript to WASM) and 16 SDK unit tests pass.
 - The `local-fork` experimental-chain target is written from the CLI v1.39.0 source and has not been run.
+- No `--broadcast` run yet: simulation mode returns `tx=0x`. A deployed workflow needs CRE deploy access, which the
+  team has requested.
 
 ## Sources
 
