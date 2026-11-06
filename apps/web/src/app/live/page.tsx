@@ -299,7 +299,7 @@ export default function LivePage() {
                           href={addressUrl(explorer, addr)}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex size-6 items-center justify-center rounded-md text-desk hover:bg-desk/10"
+                          className="inline-flex size-6 items-center justify-center rounded-md text-link hover:bg-desk/10"
                           aria-label={`${name} on the explorer`}
                           title="Open on the explorer"
                         >

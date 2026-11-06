@@ -93,7 +93,7 @@ export default function HowPage() {
           title="One swap, two sources of liquidity, one transaction."
           lead="The Uniswap pool fills what it should. A maker's wallet fills the overflow through 1inch Aqua. Chainlink CRE keeps the maker's price honest."
         />
-        <figure className="overflow-hidden rounded-[14px] border border-line bg-surface">
+        <figure className="overflow-hidden rounded-[14px] border border-line bg-white">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/architecture.svg" alt="WalletDesk architecture: maker wallet, Aqua registry, WalletDeskRouter, OverflowHook, v4 PoolManager, any v4 router, DeskPriceFeed, and the Chainlink CRE desk-guard workflow" className="w-full" />
         </figure>
@@ -104,7 +104,7 @@ export default function HowPage() {
         <ol className="grid gap-3 md:grid-cols-5">
           {steps.map((s, i) => (
             <li key={s.title} className="rounded-[12px] border border-line bg-surface p-4">
-              <span className="flex size-7 items-center justify-center rounded-full bg-band text-[13px] font-medium text-white">{i + 1}</span>
+              <span className="flex size-7 items-center justify-center rounded-full bg-ink text-[13px] font-medium text-surface">{i + 1}</span>
               <h3 className="mt-3 text-[14px] font-semibold">{s.title}</h3>
               <p className="mt-1.5 text-[13px] leading-relaxed text-body">{s.body}</p>
             </li>
@@ -154,10 +154,10 @@ export default function HowPage() {
                       className="group flex items-start justify-between gap-3 rounded-md px-1 py-2 transition-colors hover:bg-surface"
                     >
                       <span className="min-w-0">
-                        <span className="block text-[13px] text-ink group-hover:text-desk">{label}</span>
+                        <span className="block text-[13px] text-ink group-hover:text-link">{label}</span>
                         <span className="mt-0.5 block font-mono text-[11px] text-muted-ink">{codeRef(href)}</span>
                       </span>
-                      <ArrowUpRight className="mt-0.5 size-3.5 shrink-0 text-muted-ink group-hover:text-desk" aria-hidden />
+                      <ArrowUpRight className="mt-0.5 size-3.5 shrink-0 text-muted-ink group-hover:text-link" aria-hidden />
                     </a>
                   </li>
                 ))}
@@ -181,9 +181,9 @@ export default function HowPage() {
         </InfoCard>
         <InfoCard title="Try it">
           <p>
-            The <Link href="/live" className="text-desk underline decoration-current/35 underline-offset-2 hover:decoration-current">live page</Link> reads the Unichain Sepolia
+            The <Link href="/live" className="text-link underline decoration-current/35 underline-offset-2 hover:decoration-current">live page</Link> reads the Unichain Sepolia
             deployment: maker balances, the price guard, the last fill. With a little Sepolia ETH you can mint test tokens and run an overflow swap
-            yourself, or <Link href="/desk" className="text-desk underline decoration-current/35 underline-offset-2 hover:decoration-current">ship your own desk</Link>.
+            yourself, or <Link href="/desk" className="text-link underline decoration-current/35 underline-offset-2 hover:decoration-current">ship your own desk</Link>.
           </p>
           <p className="mt-3">
             Every transaction from the live run: <ExternalLink href={repoFile("docs/DEPLOYMENTS.md")}>docs/DEPLOYMENTS.md</ExternalLink>.

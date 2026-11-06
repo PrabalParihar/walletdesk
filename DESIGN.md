@@ -12,7 +12,7 @@ approximate.
 
 **Theme statement:** calm, exact, verifiable sheet.
 
-**Character:** A white page on a drafting table: the content column sits between hatched rails, divided by dashed
+**Character:** Dark-first, like Designeer's own interface (a light theme is one click away). A sheet on a drafting table: the content column sits between hatched rails, divided by dashed
 rules, with numbered monospace labels like a technical document. The chrome stays neutral so the only strong colour is
 the product's own story: pink for the Uniswap pool leg, blue for the maker-wallet leg.
 
@@ -51,7 +51,11 @@ numbers), Uniswap and 1inch brand hues for the two liquidity legs.
 | Problem cards | #BE123C | #FFF7F8, border #E11D48 at 15% |
 | Solution cards | #0050C8 | #F5F9FF, border #0066FA at 15% |
 
-No dark theme yet (colours are set per component; see Don'ts).
+### Dark theme (default)
+Tokens live in `globals.css` (`--wd-*`, exposed as Tailwind colours `ink`, `body`, `muted-ink`, `faint`, `surface`, `raised`,
+`sunken`, `band`, `link`, `desk`, `desk-ink`, `problem`, `problem-soft`, `solution`, `line`, `line-2`, `line-3`, `hover`).
+Dark values: surface #0B0B0C, raised #141416, sunken #1C1C1F, ink #F4F4F5, body #C9C9CF, muted #A1A1AA, link #7CB4FF,
+lines white at 8/12/18%. `desk` stays #0066FA as a fill in both themes; link text uses `link`. All pairs checked ≥ 4.5:1.
 
 ## 3. Typography
 
@@ -88,7 +92,7 @@ No dark theme yet (colours are set per component; see Don'ts).
 | JumpMenu | Pattern | Ctrl/⌘K command palette (combobox + listbox) | grouped results |
 | Contract rows | Pattern | name · role, short address, copy, explorer | — |
 | Code rows | Pattern | label + `File.sol:line` meta, opens GitHub | — |
-| Shell | Template | Framed sheet: header, main, footer between rails | fork mode adds demo wallets |
+| Shell | Template | Designeer-style frame: sticky sidebar (wordmark, Browse, Proof, live-network card) + top bar with search pill, theme toggle, wallet | below `lg` collapses to a header with a scroll row; fork mode adds demo wallets |
 
 Missing states to watch: skeletons for first chain read (today "Reading the chain…" text), empty state for "no desks".
 
@@ -125,7 +129,7 @@ Layering: content 0; sticky header 20; dialog overlay 40 (white 60% + blur); dia
 - Don't disable a button whose label is an action; make it do the action or explain why it can't.
 - Don't add colour to chrome (header, footer, rails); colour belongs to content.
 - Don't animate without a reduced-motion path (`motion-safe:`, `.wd-reveal`, NumberFlow defaults).
-- Don't add a dark theme by sprinkling `dark:` classes; it needs tokens first.
+- Don't hard-code a neutral colour; use the theme tokens so both themes stay correct (`dark:` only for fixed brand hues).
 
 ## 8. Responsive
 

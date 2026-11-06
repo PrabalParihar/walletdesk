@@ -126,9 +126,9 @@ export default function HomePage() {
       <section className="grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr]">
         <div>
           <p className="mb-4 flex flex-wrap gap-2 text-[12px] font-medium">
-            <span className="rounded-full bg-[#FF007A]/10 px-2.5 py-1 text-[#C2185B]">Uniswap v4</span>
+            <span className="rounded-full bg-[#FF007A]/10 dark:bg-[#FF007A]/15 px-2.5 py-1 text-[#C2185B] dark:text-[#FF8CC3]">Uniswap v4</span>
             <span className="rounded-full bg-desk/10 px-2.5 py-1 text-desk-ink">1inch Aqua · SwapVM</span>
-            <span className="rounded-full bg-[#375BD2]/10 px-2.5 py-1 text-[#2A44A0]">Chainlink CRE</span>
+            <span className="rounded-full bg-[#375BD2]/10 dark:bg-[#375BD2]/20 px-2.5 py-1 text-[#2A44A0] dark:text-[#B4C3F5]">Chainlink CRE</span>
           </p>
           <h1 className="text-4xl font-semibold tracking-tight text-balance md:text-[52px] md:leading-[1.05]">
             Wallets back Uniswap pools without depositing.
@@ -160,7 +160,7 @@ export default function HomePage() {
               <span>The pool fills the first <b>1 DA</b>, as any v4 swap would.</span>
             </li>
             <li className="flex gap-3">
-              <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-band text-[12px] text-white">2</span>
+              <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-ink text-[12px] text-surface">2</span>
               <span>The hook checks every maker desk against the pool price and the Chainlink CRE reference, and picks the best quote.</span>
             </li>
             <li className="flex gap-3">
@@ -298,7 +298,7 @@ export default function HomePage() {
       </section>
 
       {/* Judge path */}
-      <section className="rounded-[16px] bg-band p-6 text-white md:p-8" aria-labelledby="judge-heading">
+      <section className="rounded-[16px] bg-band p-6 text-white md:p-8 dark:border dark:border-line-2" aria-labelledby="judge-heading">
         <Eyebrow index="05" className="text-faint [&>span:first-child]:text-band-link">
           For judges
         </Eyebrow>

@@ -18,7 +18,7 @@ export function ExternalLink({
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className={cn("inline-flex items-center gap-0.5 text-desk underline decoration-current/35 underline-offset-2 hover:decoration-current", className)}
+      className={cn("inline-flex items-center gap-0.5 text-link underline decoration-current/35 underline-offset-2 hover:decoration-current", className)}
     >
       {children}
       <ArrowUpRight className="size-3.5 shrink-0" aria-hidden />
@@ -30,7 +30,7 @@ export function ExternalLink({
 export function Eyebrow({ children, index, className }: { children: React.ReactNode; index?: string; className?: string }) {
   return (
     <p className={cn("flex items-center gap-2 font-mono text-[12px] tracking-wider text-muted-ink uppercase", className)}>
-      {index ? <span className="text-desk">{index}</span> : null}
+      {index ? <span className="text-link">{index}</span> : null}
       <span>{children}</span>
     </p>
   );
@@ -104,7 +104,7 @@ export function InfoCard({
         <p
           className={cn(
             "mb-2 font-mono text-[11px] tracking-wider uppercase",
-            tone === "problem" ? "text-problem" : "text-desk",
+            tone === "problem" ? "text-problem" : "text-link",
           )}
         >
           {tag}
@@ -121,7 +121,7 @@ export function StatLink({ value, label, href, internal }: { value: string; labe
     <>
       <p className="text-[26px] font-semibold tracking-tight text-ink tabular-nums">{value}</p>
       <p className="mt-1 text-[13px] leading-snug text-muted-ink">{label}</p>
-      {href ? <ArrowUpRight className="absolute top-4 right-4 size-4 text-desk" aria-hidden /> : null}
+      {href ? <ArrowUpRight className="absolute top-4 right-4 size-4 text-link" aria-hidden /> : null}
     </>
   );
   const cls = "relative block rounded-[12px] border border-line bg-surface p-4 transition-colors hover:border-desk/40";

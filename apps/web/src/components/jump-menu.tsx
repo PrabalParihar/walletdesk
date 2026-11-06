@@ -32,7 +32,7 @@ const items: Item[] = [
   { group: "Docs", label: "Source code", hint: "GitHub", href: REPO_URL, external: true },
 ];
 
-export function JumpMenu() {
+export function JumpMenu({ wide = false }: { wide?: boolean }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -90,11 +90,15 @@ export function JumpMenu() {
       <Dialog.Trigger asChild>
         <button
           type="button"
-          className="inline-flex h-8 items-center gap-2 rounded-lg border border-line-2 px-2 text-[12px] text-muted-ink transition-colors hover:bg-black/[0.03] hover:text-ink md:pr-1.5 md:pl-2.5"
+          className={cn(
+            "inline-flex h-8 items-center gap-2 rounded-lg border border-line-2 px-2 text-[12px] text-muted-ink transition-colors hover:bg-hover hover:text-ink md:pr-1.5 md:pl-2.5",
+            // Designeer-style search pill on wider screens
+            wide && "md:h-9 md:w-[340px] md:rounded-[10px] md:bg-raised md:px-3 md:text-[13px]",
+          )}
           aria-label="Jump to a page, contract, transaction or doc"
         >
           <Search className="size-3.5" aria-hidden />
-          <span className="hidden md:inline">Jump to</span>
+          <span className={cn("hidden md:inline", wide && "md:flex-1 md:text-left")}>{wide ? "Search pages, contracts, txs" : "Jump to"}</span>
           <span className="hidden items-center gap-0.5 md:inline-flex" aria-hidden>
             <kbd className="rounded border border-line-2 bg-sunken px-1 font-mono text-[10px] leading-4">{kbd}</kbd>
             <kbd className="rounded border border-line-2 bg-sunken px-1 font-mono text-[10px] leading-4">K</kbd>

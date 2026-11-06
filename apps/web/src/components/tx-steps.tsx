@@ -42,7 +42,7 @@ export function TxSteps({ steps, explorer }: { steps: Step[]; explorer?: string 
               className={cn(
                 "flex size-5 shrink-0 items-center justify-center rounded-full",
                 step.state === "done" && "bg-[#047857] text-white",
-                step.state === "active" && "text-desk",
+                step.state === "active" && "text-link",
                 step.state === "error" && "bg-[#BE123C] text-white",
               )}
               aria-hidden
