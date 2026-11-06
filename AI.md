@@ -1,10 +1,18 @@
 # AI disclosure
 
-Two AI tools were used, in two phases. Prompts: `docs/prompts/`. Spec: `docs/spec/DESIGN.md`.
+Two AI tools were used, in two phases. Prompts: `docs/prompts/` (the v1 Cursor prompts are a labelled reconstruction; the session was not exported). Spec: `docs/spec/DESIGN.md`.
 
-**Team contribution (TODO before submitting, in your own words):** what the team decided, wrote, reviewed and ran
-yourselves, for example the idea and partner tracks, design choices, the deploys, the CRE simulation and the demo.
-ETHGlobal may limit partner-prize eligibility for projects that rely entirely on AI, so state this accurately.
+## Team contribution
+
+As stated by the team lead (Prabal) on 6 Nov 2026, the team did:
+
+- the WalletDesk idea and the choice of partner tracks;
+- the architecture, and implementation together with the AI tools below;
+- design decisions and review of the AI-written code and docs;
+- deploys and testing;
+- the demo and the video.
+
+The AI tools wrote most of the code under that direction. File-level attribution follows.
 
 ## Phase 1: Cursor cloud agent (v1, commits `4f83189` to `d7c4bfd`)
 
@@ -95,6 +103,7 @@ Written or rewritten:
 - `services/keeper/index.mjs`, `services/keeper/reference.mjs`, `services/keeper/reference.test.mjs`
 - `apps/web/src/app/live/page.tsx`, `desk/page.tsx`, `fees/page.tsx`, `docs/page.tsx`, `page.tsx`, `layout.tsx`, `apps/web/src/lib/*.ts`, `apps/web/src/components/shell.tsx`, `providers.tsx`, `apps/web/.env.example`
 - `README.md`, `SUBMISSION.md`, `FEEDBACK.md`, `AI.md`, `AI_DISCLOSURE.md`, `arc/README.md`, `script/demo.sh`, `.github/workflows/ci.yml`
+- `apps/web/src/app/globals.css` (font fix)
 - `docs/spec/DESIGN.md`, `docs/THREAT_MODEL.md`, `docs/prompts/*`, `docs/SWAPVM_DIFF.md`, `docs/ORACLE.md`, `docs/CCTP.md`, `docs/WALKTHROUGH.md`, `docs/architecture.md`
 
 Review the fork test output before treating any balance assertion as a measured production result. No users, volume,
