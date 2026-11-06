@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 
+import { networkMode } from "@/lib/chains";
 import { parseDeployment, type Deployment } from "@/lib/contracts";
+import { SEPOLIA_DEPLOYMENT } from "@/lib/live";
 
 export type DeploymentState =
   | { status: "loading"; deployment: null; error: null }
@@ -17,10 +19,16 @@ export function useDeployment(): DeploymentState {
     let cancelled = false;
     async function load() {
       try {
-        const response = await fetch("/deployments.json", { cache: "no-store" });
-        if (response.ok) {
-          const parsed = parseDeployment(await response.json());
-          if (!cancelled) setState({ status: "ready", deployment: parsed, error: null });
+        // public/deployments.json is written by ./script/demo.sh for the local fork only. Other networks never read
+        // it, so a leftover fork file cannot masquerade as a live deployment.
+        if (networkMode === "fork") {
+          const response = await fetch("/deployments.json", { cache: "no-store" });
+          if (response.ok) {
+            const parsed = parseDeployment(await response.json());
+            if (!cancelled) setState({ status: "ready", deployment: parsed, error: null });
+            return;
+          }
+          if (!cancelled) setState({ status: "missing", deployment: null, error: null });
           return;
         }
         const fromEnv = deploymentFromEnv();
@@ -53,9 +61,8 @@ function envAddress(name: string): `0x${string}` | null {
 }
 
 function deploymentFromEnv(): Deployment | null {
-  const network = process.env.NEXT_PUBLIC_NETWORK;
-  if (network !== "sepolia" && network !== "unichain") return null;
-  const live = network === "unichain";
+  if (networkMode === "fork") return null;
+  const live = networkMode === "unichain";
   const hook = envAddress("NEXT_PUBLIC_HOOK");
   const swapVm = envAddress("NEXT_PUBLIC_SWAP_VM");
   const overflowRouter = envAddress("NEXT_PUBLIC_OVERFLOW_ROUTER");
@@ -65,7 +72,10 @@ function deploymentFromEnv(): Deployment | null {
   const treasury = envAddress("NEXT_PUBLIC_TREASURY") || undefined;
   const usdc = envAddress("NEXT_PUBLIC_USDC") || undefined;
   const maker = envAddress("NEXT_PUBLIC_MAKER");
-  if (!hook || !swapVm || !overflowRouter || !orderBuilder || !token0 || !token1 || !maker) return null;
+  if (!hook || !swapVm || !overflowRouter || !orderBuilder || !token0 || !token1 || !maker) {
+    // No overrides: Sepolia falls back to the committed live deployment.
+    return live ? null : SEPOLIA_DEPLOYMENT;
+  }
   const arcTreasury = envAddress("NEXT_PUBLIC_ARC_TREASURY");
   return {
     network: live ? "unichain" : "sepolia",

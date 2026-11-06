@@ -11,8 +11,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { aquaAbi, builderAbi, erc20Abi, hookAbi, poolKey, shortError } from "@/lib/contracts";
-import { encodeProgram, priceToX18, programHash, STORAGE_KEY, type DeskDraft } from "@/lib/desk";
+import { MintTestTokens } from "@/components/mint-test-tokens";
+import { ExternalLink } from "@/components/site";
+import { encodeProgram, formatPriceX18, priceToX18, programHash, quoteExactIn, STORAGE_KEY, type DeskDraft } from "@/lib/desk";
+import { txUrl } from "@/lib/live";
 import { useDeployment } from "@/lib/use-deployment";
+
+/** Overflow size used for the quote preview: a 5-token swap against a 1-token pool cap leaves 4 for the desk. */
+const PREVIEW_RESIDUAL = "4";
 
 const defaults = {
   amount: "1000",
@@ -171,7 +177,46 @@ export default function DeskPage() {
     }
   }
 
+  const d0 = state.status === "ready" ? state.deployment.decimals0 : 18;
+  const d1 = state.status === "ready" ? state.deployment.decimals1 : 18;
+  const sym0 = state.status === "ready" ? state.deployment.symbol0 : "token0";
+  const sym1 = state.status === "ready" ? state.deployment.symbol1 : "token1";
+  const preview = (() => {
+    const shelf0 = safeUnits(form.amount, d0);
+    const shelf1 = safeUnits(form.amount, d1);
+    const amountIn = safeUnits(PREVIEW_RESIDUAL, d0);
+    const low = priceToX18(form.priceLow, d0, d1);
+    const high = priceToX18(form.priceHigh, d0, d1);
+    const feeBps = BigInt(Number.isInteger(Number(form.feeBps)) ? Number(form.feeBps) : 0);
+    if (shelf0 === 0n || shelf1 === 0n || low === 0n || high < low) return null;
+    return quoteExactIn({
+      balanceIn: shelf0,
+      balanceOut: shelf1,
+      amountIn,
+      zeroForOne: true,
+      priceLow: low,
+      priceHigh: high,
+      feeBps,
+      start: 0n,
+      halfLife: 0n,
+      timestamp: 0n,
+    });
+  })();
+
   return (
+    <div className="flex flex-col gap-6">
+      <section className="rounded-[14px] border border-black/8 bg-[#FAFAFB] p-5 md:p-6">
+        <h1 className="text-2xl font-semibold tracking-tight md:text-[28px]">Make a desk</h1>
+        <p className="mt-2 max-w-3xl text-[14px] leading-relaxed text-[#4A4A52]">
+          A desk is a quote that lives in your wallet. You pick a price band and a fee, ship it as a DeskBand strategy on 1inch Aqua, and
+          register it on the hook. Your tokens never leave the wallet until a swap fills against your desk.
+        </p>
+        {state.status === "ready" ? (
+          <div className="mt-4">
+            <MintTestTokens deployment={state.deployment} which="both" amount="1000" />
+          </div>
+        ) : null}
+      </section>
     <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
       <Card className="shadow-[0_8px_30px_rgba(0,0,0,0.04)]">
         <CardHeader>
@@ -186,16 +231,15 @@ export default function DeskPage() {
           {state.status === "loading" ? <Notice tone="info">Loading the deployment…</Notice> : null}
           {state.status === "missing" ? (
             <Notice tone="info">
-              No deployment yet. From the repo root run <span className="font-mono">./script/demo.sh</span>. For Unichain Sepolia, set{" "}
-              <span className="font-mono">NEXT_PUBLIC_NETWORK=sepolia</span> and the contract addresses in{" "}
-              <span className="font-mono">apps/web/.env.local</span> after you broadcast the deploy script.
+              No local deployment yet. From the repo root run <span className="font-mono">./script/demo.sh</span>, or run the app without{" "}
+              <span className="font-mono">NEXT_PUBLIC_NETWORK</span> to use the live Unichain Sepolia deployment.
             </Notice>
           ) : null}
           {state.status === "error" ? <Notice tone="error">{state.error}</Notice> : null}
           {state.status === "ready" ? (
             <Notice tone="info">
-              Pair {state.deployment.symbol0}/{state.deployment.symbol1} on chain {state.deployment.chainId}. Seeded maker{" "}
-              <span className="font-mono">{state.deployment.maker}</span>.
+              Pair {state.deployment.symbol0}/{state.deployment.symbol1} on chain {state.deployment.chainId}. Connect a wallet on this chain;
+              it becomes the maker.
             </Notice>
           ) : null}
           <div className="grid grid-cols-2 gap-3">
@@ -215,6 +259,32 @@ export default function DeskPage() {
           </div>
         </CardContent>
       </Card>
+      <div className="grid content-start gap-6">
+      <Card className="border-[#0066FA]/15 bg-[#F5F9FF] shadow-none">
+        <CardHeader>
+          <CardTitle>Quote preview</CardTitle>
+          <p className="text-[13px] text-[#5D5D66]">
+            What this desk would pay for a {PREVIEW_RESIDUAL} {sym0} overflow, with equal shelves. Same math as the on-chain DeskBand opcode.
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-3 text-[13px]">
+          {preview && !("error" in preview) ? (
+            <>
+              <p className="text-[28px] font-semibold tracking-tight">
+                {formatPriceX18((preview.amountOut * 10n ** 18n) / 10n ** BigInt(d1), 18, 18, 4)} {sym1}
+              </p>
+              <Row label="Band price now" value={`${formatPriceX18(preview.priceX18, d0, d1)} ${sym1} per ${sym0}`} />
+              <Row label="Your spread (kept in wallet)" value={`${formatPriceX18((preview.feeOut * 10n ** 18n) / 10n ** BigInt(d1), 18, 18, 6)} ${sym1}`} />
+              <p className="text-[12px] leading-relaxed text-[#5D5D66]">
+                As your {sym1} shelf drains, the price slides toward the low end of the band, so the quote gets worse for takers on the side
+                you are running out of.
+              </p>
+            </>
+          ) : (
+            <p className="text-[#5D5D66]">{preview && "error" in preview ? preview.error : "Set a shelf amount and a valid band."}</p>
+          )}
+        </CardContent>
+      </Card>
       <Card className="bg-[#F2F2F3] shadow-none">
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -231,10 +301,24 @@ export default function DeskPage() {
           </div>
           <div>
             <p className="text-[#5D5D66]">Register transaction</p>
-            <p className="mt-1 break-all font-mono text-xs">{result?.hash ?? "No transaction yet."}</p>
+            <p className="mt-1 break-all font-mono text-xs">
+              {result ? (
+                txUrl(state.status === "ready" ? state.deployment.explorer : undefined, result.hash) ? (
+                  <ExternalLink href={txUrl(state.status === "ready" ? state.deployment.explorer : undefined, result.hash)}>
+                    {result.hash}
+                  </ExternalLink>
+                ) : (
+                  result.hash
+                )
+              ) : (
+                "No transaction yet."
+              )}
+            </p>
           </div>
         </CardContent>
       </Card>
+      </div>
+    </div>
     </div>
   );
 }

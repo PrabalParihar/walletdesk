@@ -83,6 +83,20 @@ export const erc20Abi = [
   },
 ] as const;
 
+/** The demo pool's tokens are solmate MockERC20s with a public mint, so anyone can get test tokens. */
+export const mockTokenAbi = [
+  {
+    type: "function",
+    name: "mint",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "to", type: "address" },
+      { name: "value", type: "uint256" },
+    ],
+    outputs: [],
+  },
+] as const;
+
 export const aquaAbi = [
   {
     type: "function",

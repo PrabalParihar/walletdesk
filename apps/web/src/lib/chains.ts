@@ -20,7 +20,8 @@ export const chains = [unichainFork, unichain, unichainSepolia, arcTestnet] as c
 
 export type NetworkMode = "fork" | "sepolia" | "unichain";
 const requested = process.env.NEXT_PUBLIC_NETWORK;
-export const networkMode: NetworkMode = requested === "sepolia" || requested === "unichain" ? requested : "fork";
+/** Default is the live Unichain Sepolia deployment, so the app works with no local chain. demo.sh sets "fork". */
+export const networkMode: NetworkMode = requested === "fork" || requested === "unichain" ? requested : "sepolia";
 
 export const networkLabel: Record<NetworkMode, string> = {
   fork: "Unichain fork",
