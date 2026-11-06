@@ -1,0 +1,30 @@
+{
+  "schedule": "*/30 * * * * *",
+  "chainSelectorName": "ethereum-testnet-sepolia-unichain-1",
+  "feedAddress": "0xb1749dDDd701D99a9f318610a7A6962b11409c82",
+  "poolId": "0xae93c1bd88e46a2fae33d97774b45f23f4b50d09592456487f208e1314bda1fe",
+  "gasLimit": "300000",
+  "token0Decimals": 18,
+  "token1Decimals": 18,
+  "sources": [
+    {
+      "name": "coinbase",
+      "url": "https://api.coinbase.com/v2/prices/USDT-USDC/spot",
+      "format": "coinbase-spot",
+      "invert": false
+    },
+    {
+      "name": "kraken",
+      "url": "https://api.kraken.com/0/public/Ticker?pair=USDCUSDT",
+      "format": "kraken-ticker",
+      "invert": true
+    }
+  ],
+  "minSources": 1,
+  "maxSourceSpreadBps": 50,
+  "minPrice": "0.95",
+  "maxPrice": "1.05",
+  "deviationThresholdBps": 10,
+  "heartbeatSeconds": 300,
+  "verifyWrite": true
+}
