@@ -8,7 +8,7 @@ import "./globals.css";
 
 const inter = Inter({
   subsets: ["latin"],
-  variable: "--font-sans",
+  variable: "--font-inter",
 });
 
 const mono = Geist_Mono({
@@ -18,13 +18,13 @@ const mono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "WalletDesk",
-  description: "Turn idle tokens in your wallet into a Uniswap market. Fees settle as USDC on Arc.",
+  description: "Turn idle tokens in your wallet into a Uniswap market. Uniswap v4 hook + 1inch Aqua SwapVM + Chainlink CRE price guard.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
-      <body className={`${inter.variable} ${mono.variable} antialiased`}>
+    <html lang="en" className={`${inter.variable} ${mono.variable}`}>
+      <body className="antialiased">
         <Providers>
           <Shell>{children}</Shell>
         </Providers>

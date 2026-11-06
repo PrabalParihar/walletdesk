@@ -9,7 +9,7 @@ via_ir = true
 bytecode_hash = "none"
 auto_detect_solc = true
 auto_detect_remappings = false
-fs_permissions = [{ access = "read", path = "./" }, { access = "write", path = "./deployments" }]
+fs_permissions = [{ access = "read", path = "./" }, { access = "read-write", path = "./deployments" }]
 
 [rpc_endpoints]
 unichain = "https://mainnet.unichain.org"

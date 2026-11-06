@@ -92,6 +92,7 @@ print("hook", deployment["hook"])
 print("maker", deployment["maker"])
 print("taker", deployment["taker"])
 print("treasury", deployment["treasury"])
+print("price feed", deployment["priceFeed"])
 print("pool", deployment["poolId"])
 out = subprocess.check_output([
     "cast", "call", deployment["hook"],
@@ -118,16 +119,27 @@ fi
 NEXT_PUBLIC_NETWORK=fork \
   NEXT_PUBLIC_RPC_URL="$RPC" \
   npm run build --prefix "$ROOT/apps/web" > /tmp/walletdesk-web-build.log
+# npm --prefix runs the app's own "start" script inside apps/web, where .next and node_modules live.
 NEXT_PUBLIC_NETWORK=fork \
   NEXT_PUBLIC_RPC_URL="$RPC" \
-  npx --prefix "$ROOT/apps/web" next start --hostname 0.0.0.0 --port 43127 > /tmp/walletdesk-web.log 2>&1 &
+  npm --prefix "$ROOT/apps/web" run start -- --hostname 0.0.0.0 --port 43127 > /tmp/walletdesk-web.log 2>&1 &
 WEB_PID=$!
+for _ in $(seq 1 30); do
+  curl -sf -m 2 -o /dev/null http://127.0.0.1:43127/ && break
+  sleep 1
+done
+if ! curl -sf -m 2 -o /dev/null http://127.0.0.1:43127/; then
+  echo "The UI did not start. Log: /tmp/walletdesk-web.log"
+  tail -20 /tmp/walletdesk-web.log
+  exit 1
+fi
 
 echo
 echo "WalletDesk demo is up."
 echo "  UI      http://127.0.0.1:43127"
 echo "  Live    http://127.0.0.1:43127/live"
-echo "  Keeper  http://127.0.0.1:8787/health"
+echo "  Keeper  http://127.0.0.1:8787/health   (also /fills, /skips, /reference)"
+echo "  The keeper posts a live USDT/USD reference to DeskPriceFeed every 30s, standing in for the CRE workflow."
 echo "  Maker   $(cast wallet address --private-key "$MAKER_KEY")"
 echo "  Taker   $(cast wallet address --private-key "$TAKER_KEY")"
 echo "Import an Anvil account from ${LOG} if you want the buttons to send transactions."

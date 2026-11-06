@@ -1,55 +1,114 @@
 # WalletDesk submission checklist
 
-ETHGlobal Mumbai. Partner picks: 1inch Aqua, Uniswap, Arc DeFi. Stablecoin logic is the optional split on `FeeShareTreasury.setSplit`.
+ETHGlobal Mumbai. Submissions close **Sat 7 Nov 2026, 09:00 IST**. Late submissions are not accepted.
+Partner picks (max 3): **1inch Aqua, Uniswap Foundation, Chainlink (CRE)**.
 
-Status is what is in this repo on the commit that added this file. "You" means Prabal before submit. No users, volume, or partners are claimed here.
+The repo stays **private** until the submission is filed, so the idea cannot be copied before judging. Making it
+public is the second-to-last step below; Uniswap's rules require a public repo for judging.
 
-## ETHGlobal
+## Status of the code (branch `claude/admiring-galileo-aq0yo0`)
 
-| ID | Requirement | Status |
-| --- | --- | --- |
-| EG1 | Public GitHub, steady commits, no single Saturday dump | In progress. History starts at `4f83189` and continues in small commits on `main`. Squash is not used. The repo was still private when this file was written. Make it public before submit. |
-| EG2 | Demo video, 2 to 4 min, at least 720p, real voice, not sped up, not a phone | Blocked on you. Script: `docs/WALKTHROUGH.md`. The local demo is `./script/demo.sh`. |
-| EG3 | AI-assisted files disclosed | Done. `AI.md` and `AI_DISCLOSURE.md`. |
-| EG4 | Partner picks are 1inch, Uniswap, and Arc DeFi | Blocked on you. Select them on the ETHGlobal dashboard. This file is not a screenshot. |
-| EG5 | Work starts at the hackathon. No prior product code | Done. Fresh repo. Upstream libraries under `contracts/lib` are vendored public packages. |
-| EG6 | Prabal signs off before submit | Blocked on you. |
+Done and verified:
+- 38 local tests, plus 21 fork tests against the live Unichain PoolManager and Aqua.
+- `./script/demo.sh` end to end.
+- Playwright drove the UI on the fork: a swap through Uniswap's PoolSwapTest filled from the desk, ship + register, and a rebate claim.
+- Mainnet and Sepolia deploy + seed rehearsed on forks.
+- The CRE workflow builds and its 16 tests pass.
+- Web lint + build, and CI green.
 
-## 1inch Aqua
+## Remaining steps (in order)
 
-| ID | Requirement | Status |
-| --- | --- | --- |
-| I1 | Official Aqua / SwapVM contracts, modified router documented | Done. Registry `0x1111113CCf1426A8E30e2bfF5E005d929bF6a90a`. Canonical router `0x111111338c5091E8440b67B168bAe16a668AC0De` is not called, because it has no DeskBand opcode. `docs/SWAPVM_DIFF.md`. `WalletDeskRouter` inherits unmodified `SwapVM` and replaces the opcode table. |
-| I2 | Onchain token transfers in the demo. A local fork is allowed | Done on a fork. `OverflowForkTest` and `./script/demo.sh` pull from the maker wallet and push the taker's input back. The live page and `GET /fills` show `Pulled` and `Pushed`. |
-| I3 | Commit history | Same as EG1. |
-| I4 | SwapVM usage | Done. Program bytes from `DeskBandProgram`. The UI calls `OrderBuilder.buildBand` and `Aqua.ship`. |
-| I5 | Sophisticated position: concentrate, decay, fee, and an oracle path | Done for concentrate, decay, and fee (DeskBand). Extruction to `UniV4OracleAdapter` is implemented and tested, and it is not in the default program. `docs/ORACLE.md` says why that would drop the maker's band and fee. |
+| # | Step | Who | Status |
+| --- | --- | --- | --- |
+| 1 | Live deploy on Unichain mainnet: deploy, reference, ship, register, two overflow swaps | Claude, burner key funded by the team | Runs automatically once the burner `0xdC8415C8A712cDdD6Bf503d45b54DB29A1a4e759` holds ≥ 0.0005 ETH (full run costs ≈ 0.0001 ETH). Record: `docs/DEPLOYMENTS.md` |
+| 2 | Same on Unichain Sepolia (self-deployed Aqua), then hand the feed to the CRE mock forwarder | Claude, burner funded with Sepolia ETH | Runs automatically once funded |
+| 3 | `cre workflow simulate` (Chainlink requires a successful run) | You, on your machine (you are logged in) | Commands below. Paste the output into `services/cre/desk-guard/SIMULATION.md` |
+| 4 | Cursor prompts | Claude | Done as a labelled reconstruction: `docs/prompts/01-cursor-v1.md` (the session was not exported) |
+| 5 | Your own commits from here (SIMULATION.md output, any tweak). No squash or history rewrite | You | — |
+| 6 | Video: 2–4 min, ≥720p, your voice, not sped up, not a phone | You | `./script/demo.sh`, then use the **Demo maker / Demo taker** buttons; script in `docs/WALKTHROUGH.md` |
+| 7 | Make the repo public | You, right before filing | Uniswap requires it |
+| 8 | Uniswap feedback form with the link to `FEEDBACK.md` | You | https://developers.uniswap.org/hackathon-feedback |
+| 9 | File on ETHGlobal, select 1inch, Uniswap Foundation, Chainlink, paste the text below | You | Before 09:00 IST Sat 7 Nov |
 
-## Uniswap
+### Step 3: the CRE simulation on your machine
 
-| ID | Requirement | Status |
-| --- | --- | --- |
-| U1 | Public open-source repo | MIT `LICENSE` is in the repo. Visibility is the same blocker as EG1. |
-| U2 | `FEEDBACK.md` | Done. |
-| U3 | Feedback form submitted with the `FEEDBACK.md` URL | Blocked on you. Form: https://developers.uniswap.org/hackathon-feedback |
-| U4 | README points at the integration file and line | Done. Section "Uniswap integration". |
+```bash
+git fetch origin && git checkout main && git pull
+cd services/cre/desk-guard && bun install && cd ..
+```
 
-## Arc
+Option A, Unichain Sepolia (CRE-supported). Use the Sepolia `DeskPriceFeed` and pool id from `docs/DEPLOYMENTS.md`:
 
-| ID | Requirement | Status |
-| --- | --- | --- |
-| A1 | Built in Arc Studio, shareable URL, show Studio in the video | Blocked on you. Exact paste steps: `arc/README.md`. No URL is invented here. |
-| A2 | Working frontend and backend | Frontend is wired for the local fork and for Sepolia via env. The keeper is the local backend. Studio's own frontend exists after you deploy the project. |
-| A3 | Architecture diagram | Done. Mermaid in `docs/architecture.md`. Drawing: `docs/architecture.svg`. |
-| A4 | USDC settlement on Arc | Code is ready. CCTP V2 burn and mint script: `docs/CCTP.md`. No Arc testnet transaction is in this repo, because broadcasting needs your key. The fork demo claims 6-decimal USDC from `FeeShareTreasury` on the fork and labels that path `attestor`. |
-| A5 | GitHub or Replit link | This repo. |
-| A6 | Submission names the DeFi Studio bounty, and Stablecoin Logic if splits ship | Text you can paste is below. `setSplit` is in the treasury. A split transaction on Arc testnet still needs your broadcast. |
+```bash
+node desk-guard/scripts/make-config.mjs --target unichain-sepolia --feed <DeskPriceFeed> --pool <poolId>
+cre workflow simulate desk-guard --target unichain-sepolia --non-interactive --trigger-index 0
+```
+
+A dry run is enough for the prize. To also land the report on chain, put a Unichain Sepolia key with a little ETH in
+`services/cre/.env` as `CRE_ETH_PRIVATE_KEY=...` (never commit it) and add `--broadcast`.
+
+Option B, your local fork (no testnet funds needed; the experimental-chain target is untested):
+
+```bash
+FEED_FORWARDER=0x6E9EE680ef59ef64Aa8C7371279c27E496b5eDc1 ./script/demo.sh   # in another terminal, from the repo root
+node desk-guard/scripts/etch-mock-forwarder.mjs
+node desk-guard/scripts/make-config.mjs
+cre workflow simulate desk-guard --target local-fork --non-interactive --trigger-index 0 --broadcast
+```
+
+## Requirement map
+
+### 1inch: Build an Aqua App ($5,000: 2.5k / 1.5k / 1k)
+
+| Requirement | Status |
+| --- | --- |
+| Official Aqua / SwapVM contracts; a redeployed modified SwapVM is allowed | Done. Live Aqua registry; `WalletDeskRouter` inherits unmodified SwapVM v1.0.2 and replaces the opcode table. `docs/SWAPVM_DIFF.md` |
+| Sophisticated position; custom SwapVM instructions score higher | Done. DeskBand opcode: value-weighted band in the v4 price unit, both directions, decay, fee; guarded by spot and CRE |
+| On-chain token transfers in the demo (local fork is fine) | Done. `./script/demo.sh` and the fork tests show Aqua `Pulled` / `Pushed`. Step 1 adds real mainnet transfers |
+| Proper commit history, no single-commit entries on the final day | Keep committing in small steps (step 5) |
+| License | `contracts/src/swapvm/` is SwapVM-1.1 with dated change notes; "Powered by SwapVM / Aqua" in README and UI footer |
+
+### Uniswap Foundation: Build with Uniswap ($10,000: 4k / 3k / 2k / 1k)
+
+| Requirement | Status |
+| --- | --- |
+| Public open-source repo | Step 7, at submission time |
+| `FEEDBACK.md` + feedback form with its link | File done; form is step 8 |
+| README points to the integration lines | Done. README → Uniswap integration |
+
+### Chainlink: Best workflow with CRE ($1,500)
+
+| Requirement | Status |
+| --- | --- |
+| CRE workflow used as an orchestration layer, meaningfully used | Done. It is the hook's off-chain price guard; without a fresh reference, desks do not fill |
+| Connects a blockchain with an external API | Done. Coinbase + Kraken HTTP → `DeskPriceFeed` on chain |
+| Successful simulation via CRE CLI, or a live deployment | Step 3, on your logged-in machine |
+
+### ETHGlobal
+
+| Requirement | Status |
+| --- | --- |
+| Work started after hacking opened (21:00 IST 5 Nov) | First commit 00:38 IST 6 Nov |
+| AI use documented, with prompts and spec files | Done: `AI.md` (with team contribution), `docs/prompts/`, `docs/spec/DESIGN.md` |
+| Video 2–4 min | Step 6 |
 
 ## Paste for the submission form
 
-WalletDesk turns idle tokens in a wallet into a Uniswap v4 market. The maker ships a DeskBand strategy on 1inch Aqua. Tokens stay in the wallet. `OverflowHook` lets the pool fill up to a cap and settles the residual from that wallet in the same transaction through a modified SwapVM router. Maker fees are accounted as 6-decimal USDC. On Unichain Sepolia, `CctpFeeBridge` burns that USDC through Circle CCTP V2 to Arc domain 26. A local Unichain fork cannot get an Iris attestation, so the demo credits `FeeShareTreasury` directly. The treasury can set a protocol split in basis points.
+**Short description.** WalletDesk turns idle tokens in a wallet into Uniswap v4 liquidity without depositing them.
 
-Picks: 1inch Aqua, Uniswap, Arc DeFi (Arc Studio treasury, plus the stablecoin split).
+**Long description.** A maker ships a DeskBand strategy on 1inch Aqua: a custom SwapVM instruction that quotes a
+value-weighted price band with decay and a fee, while the tokens stay in the wallet. Our Uniswap v4 hook caps how much
+of an exact-input swap the pool fills and fills the residual from the best registered desk in the same transaction,
+through any v4 router: it advances the residual from PoolManager reserves and returns a `BeforeSwapDelta` that charges
+the caller. Before a desk fills, its quote must sit within the maker's limit of both the pool spot and a reference
+price that a Chainlink CRE workflow writes on chain from Coinbase and Kraken, so a stale band is skipped instead of
+picked off. A desk can never revert a swap: unfunded wallets, failed fills and stale references fall back to the pool.
+
+**How it's made.** Foundry, Uniswap v4 (OpenZeppelin `BaseHook`), 1inch Aqua + SwapVM v1.0.2 (redeployed with our
+opcode), Chainlink CRE TypeScript SDK, Next.js + wagmi, a viem keeper. 38 local tests plus the same hook suite on a
+Unichain mainnet fork against the live PoolManager and Aqua.
+
+**Partner prizes.** 1inch (Build an Aqua App), Uniswap Foundation (Build with Uniswap), Chainlink (Best workflow with CRE).
 
 ## Commands the judges can run
 
@@ -61,4 +120,11 @@ cd ..
 ./script/demo.sh
 ```
 
-Fork tests use `https://mainnet.unichain.org`. If that RPC is down, the local suite still runs.
+```bash
+cd services/cre/desk-guard && bun install && bun run typecheck && bun test
+```
+
+## If you switch the third pick to Arc instead of Chainlink
+
+Every Arc prize requires Arc Studio as the starting point, a Studio URL, and Studio shown in the video. Only "Advanced
+Stablecoin Logic" fits, using `FeeShareTreasury` (rebates, `setSplit`) and the CCTP bridge. Steps: `arc/README.md`.

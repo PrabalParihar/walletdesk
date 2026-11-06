@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAccount, useConnect, useDisconnect } from "wagmi";
+import { mock } from "wagmi/connectors";
 
 import { Button } from "@/components/ui/button";
-import { networkMode } from "@/lib/chains";
+import { networkLabel, networkMode } from "@/lib/chains";
+import { useDeployment } from "@/lib/use-deployment";
 import { cn } from "@/lib/utils";
 
 const links = [
@@ -21,6 +23,16 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const { connect, connectors, isPending } = useConnect();
   const { disconnect } = useDisconnect();
   const injected = connectors[0];
+  const deployment = useDeployment();
+  // Local fork only: Anvil's dev accounts are unlocked, so a mock connector can send transactions through the
+  // fork RPC with no private key in the browser. Saves importing keys into a wallet for the demo.
+  const demoAccounts =
+    networkMode === "fork" && deployment.status === "ready"
+      ? [
+          { label: "Demo maker", address: deployment.deployment.maker },
+          { label: "Demo taker", address: deployment.deployment.taker },
+        ]
+      : [];
 
   return (
     <div className="min-h-screen bg-white text-[#18181B]">
@@ -31,7 +43,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
               WalletDesk
             </Link>
             <span className="rounded-full bg-[#00BBFF]/15 px-2 py-0.5 text-[11px] font-medium text-[#0B6E99]">
-              {networkMode === "sepolia" ? "Unichain Sepolia" : "Unichain fork"}
+              {networkLabel[networkMode]}
             </span>
           </div>
           <nav className="hidden items-center gap-1 sm:flex">
@@ -56,9 +68,23 @@ export function Shell({ children }: { children: React.ReactNode }) {
               <span className="text-[#5D5D66]">{chain?.name ?? "wallet"}</span>
             </Button>
           ) : (
-            <Button size="sm" disabled={!injected || isPending} onClick={() => injected && connect({ connector: injected })}>
-              {injected ? "Connect" : "No wallet"}
-            </Button>
+            <div className="flex items-center gap-2">
+              {demoAccounts.map((account) => (
+                <Button
+                  key={account.label}
+                  size="sm"
+                  variant="outline"
+                  disabled={isPending}
+                  title={`Unlocked Anvil account ${account.address} on the local fork`}
+                  onClick={() => connect({ connector: mock({ accounts: [account.address] }) })}
+                >
+                  {account.label}
+                </Button>
+              ))}
+              <Button size="sm" disabled={!injected || isPending} onClick={() => injected && connect({ connector: injected })}>
+                {injected ? "Connect" : "No wallet"}
+              </Button>
+            </div>
           )}
         </div>
         <nav className="flex gap-1 overflow-x-auto border-t border-black/8 px-4 py-2 sm:hidden">
@@ -77,6 +103,13 @@ export function Shell({ children }: { children: React.ReactNode }) {
         </nav>
       </header>
       <main className="mx-auto max-w-6xl px-4 py-8 md:px-6 md:py-12">{children}</main>
+      <footer className="border-t border-black/8">
+        <div className="mx-auto flex max-w-6xl flex-wrap gap-x-4 gap-y-1 px-4 py-4 text-[12px] text-[#5D5D66] md:px-6">
+          <span>Powered by SwapVM — © Degensoft Ltd 2025</span>
+          <span>Powered by Aqua — © Degensoft Ltd 2025</span>
+          <span>Uniswap v4 hook · Chainlink CRE reference price</span>
+        </div>
+      </footer>
     </div>
   );
 }

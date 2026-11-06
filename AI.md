@@ -1,5 +1,21 @@
 # AI disclosure
 
+Two AI tools were used, in two phases. Prompts: `docs/prompts/` (the v1 Cursor prompts are a labelled reconstruction; the session was not exported). Spec: `docs/spec/DESIGN.md`.
+
+## Team contribution
+
+As stated by the team lead (Prabal) on 6 Nov 2026, the team did:
+
+- the WalletDesk idea and the choice of partner tracks;
+- the architecture, and implementation together with the AI tools below;
+- design decisions and review of the AI-written code and docs;
+- deploys and testing;
+- the demo and the video.
+
+The AI tools wrote most of the code under that direction. File-level attribution follows.
+
+## Phase 1: Cursor cloud agent (v1, commits `4f83189` to `d7c4bfd`)
+
 A Cursor cloud agent (Grok 4.7) wrote or edited the files below. Uniswap v4-core, v4-periphery, OpenZeppelin uniswap-hooks, forge-std, 1inch aqua, 1inch swap-vm, and 1inch solidity-utils under `contracts/lib/` are upstream. They were vendored, not authored here.
 
 ## Contracts and tests
@@ -69,4 +85,26 @@ A Cursor cloud agent (Grok 4.7) wrote or edited the files below. Uniswap v4-core
 - `.github/workflows/ci.yml`
 - `LICENSE`
 
-Review the fork test output before treating any balance assertion as a measured production result. No users, volume, or partners are claimed.
+## Phase 2: Claude Code (v2, branch `claude/admiring-galileo-aq0yo0`, from commit `755231b`)
+
+Claude Code reviewed v1 against the prize rules (prompt `docs/prompts/02-claude-review.md`), wrote proof-of-concept
+tests for the defects it found, then implemented the fixes and features (prompt `docs/prompts/03-claude-v2.md`).
+Commits in this phase are authored `Claude <noreply@anthropic.com>`.
+
+Written or rewritten:
+
+- `contracts/src/OverflowHook.sol` (multi-desk registry, any-router fill, price guards, refund path)
+- `contracts/src/DeskPriceFeed.sol` (new, Chainlink CRE consumer)
+- `contracts/src/swapvm/DeskBandMath.sol`, `DeskBand.sol`, `WalletDeskRouter.sol` (direction-aware, value-weighted pricing), license headers on all of `contracts/src/swapvm/`
+- `contracts/test/Overflow.t.sol`, `contracts/test/DeskBand.t.sol`
+- `contracts/script/DeskDeployBase.sol`, `DemoSeed.s.sol`, `DeployUnichainSepolia.s.sol`, `DeployCctpBridge.s.sol`, `DeployUnichainMainnet.s.sol`
+- `contracts/remappings.txt`
+- `services/cre/**` and `docs/CRE.md` (written by a Claude Code sub-agent, reviewed and adjusted in the main session)
+- `services/keeper/index.mjs`, `services/keeper/reference.mjs`, `services/keeper/reference.test.mjs`
+- `apps/web/src/app/live/page.tsx`, `desk/page.tsx`, `fees/page.tsx`, `docs/page.tsx`, `page.tsx`, `layout.tsx`, `apps/web/src/lib/*.ts`, `apps/web/src/components/shell.tsx`, `providers.tsx`, `apps/web/.env.example`
+- `README.md`, `SUBMISSION.md`, `FEEDBACK.md`, `AI.md`, `AI_DISCLOSURE.md`, `arc/README.md`, `script/demo.sh`, `.github/workflows/ci.yml`
+- `apps/web/src/app/globals.css` (font fix)
+- `docs/spec/DESIGN.md`, `docs/THREAT_MODEL.md`, `docs/prompts/*`, `docs/SWAPVM_DIFF.md`, `docs/ORACLE.md`, `docs/CCTP.md`, `docs/WALKTHROUGH.md`, `docs/architecture.md`
+
+Review the fork test output before treating any balance assertion as a measured production result. No users, volume,
+or partners are claimed.

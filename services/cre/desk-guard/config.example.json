@@ -1,0 +1,30 @@
+{
+  "schedule": "*/30 * * * * *",
+  "chainSelectorName": "ethereum-mainnet-unichain-1",
+  "feedAddress": "0x0000000000000000000000000000000000000000",
+  "poolId": "0x0000000000000000000000000000000000000000000000000000000000000000",
+  "gasLimit": "300000",
+  "token0Decimals": 18,
+  "token1Decimals": 18,
+  "sources": [
+    {
+      "name": "coinbase",
+      "url": "https://api.coinbase.com/v2/prices/USDT-USDC/spot",
+      "format": "coinbase-spot",
+      "invert": false
+    },
+    {
+      "name": "kraken",
+      "url": "https://api.kraken.com/0/public/Ticker?pair=USDCUSDT",
+      "format": "kraken-ticker",
+      "invert": true
+    }
+  ],
+  "minSources": 1,
+  "maxSourceSpreadBps": 50,
+  "minPrice": "0.95",
+  "maxPrice": "1.05",
+  "deviationThresholdBps": 10,
+  "heartbeatSeconds": 0,
+  "verifyWrite": true
+}

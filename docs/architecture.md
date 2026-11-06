@@ -1,54 +1,64 @@
 # WalletDesk architecture
 
-Idle wallet inventory stays with the maker. A Uniswap v4 hook fills only the part of a swap the pool is willing to take. The residual is priced by a custom SwapVM opcode and settled from that same wallet through the official Aqua registry. Fees are credited later as USDC on Arc.
-
-Aqua is not deployed on Arc, so the desk and the treasury are different chains.
+Idle wallet inventory stays with the maker. A Uniswap v4 hook fills only the part of a swap the pool is willing to
+take. The residual is priced by a custom SwapVM opcode and settled from the best maker desk through the official
+Aqua registry, after a price guard against the pool spot and a Chainlink CRE reference. Drawing:
+`docs/architecture.svg` / `docs/architecture.png`.
 
 ```mermaid
 flowchart LR
   subgraph uni [Unichain or fork]
     Maker[Maker EOA]
     Aqua[Aqua registry]
-    Router[WalletDeskRouter<br/>modified SwapVM]
-    Hook[OverflowHook]
+    Router[WalletDeskRouter<br/>modified SwapVM + DeskBand]
+    Hook[OverflowHook<br/>desk registry + guards]
     PM[Uniswap v4 PoolManager]
-    Taker[Taker via OverflowRouter]
+    Taker[Any v4 router<br/>OverflowRouter, PoolSwapTest]
+    Feed[DeskPriceFeed<br/>CRE consumer]
     Maker -->|ship, no token move| Aqua
-    Maker -->|approve| Aqua
     Taker -->|exact input| PM
-    PM -->|beforeSwap delta| Hook
-    Hook -->|swap residual| Router
-    Router -->|pull output| Aqua
-    Router -->|push input| Aqua
-    Aqua -->|transferFrom wallet| Maker
+    PM -->|beforeSwap| Hook
+    Feed -->|reference price| Hook
+    Hook -->|best desk, residual| Router
+    Router -->|pull output / push input| Aqua
+    Aqua -->|transferFrom on fill| Maker
   end
 
-  subgraph arc [Arc testnet]
-    Treasury[FeeShareTreasury]
-    CCTP[CCTP V2 mint]
-    Attestor[Fork attestor]
-    CCTP -->|USDC 6 decimals| Treasury
-    Attestor -->|creditFromFill on a local fork| Treasury
-    Maker -->|claim| Treasury
+  subgraph cre [Chainlink CRE DON]
+    Cron[cron 30s] --> Http[Coinbase + Kraken per node]
+    Http --> Cons[consensus median + sanity band]
+    Cons --> Fwd[forwarder writeReport]
   end
+  Fwd -->|onReport| Feed
 
-  Hook -.->|fill id| Bridge[CctpFeeBridge on Unichain Sepolia]
-  Bridge -->|depositForBurnWithHook domain 26| CCTP
-  Hook -.->|fork only, no Iris attestation| Attestor
+  subgraph arc [Optional: USDC rebates]
+    Treasury[FeeShareTreasury on Arc]
+    Bridge[CctpFeeBridge on Unichain Sepolia] -->|CCTP V2, domain 26| Treasury
+  end
 ```
 
-## What moves in one transaction
+## What moves in one swap
 
-1. `OverflowRouter` pulls the taker's input and settles it into the PoolManager.
-2. `OverflowHook._beforeSwap` caps the pool leg and takes the residual input back out.
-3. `WalletDeskRouter.swap` runs DeskBand, then the unmodified SwapVM base calls `Aqua.pull` and `Aqua.push`.
-4. The hook settles the shelf output into the PoolManager and returns a `BeforeSwapDelta` that nets those transfers.
-5. The router takes the combined output to the taker.
+1. The router calls `PoolManager.swap` with an exact input above the pool cap. It may settle before or after.
+2. `OverflowHook._beforeSwap` checks PoolManager holds the residual, reads the CRE reference (fails closed if a feed
+   is set and the reference is missing or stale), and quotes every desk. A desk passes if its quote is within the
+   maker's `maxDeviationBps` of both the pool spot and the reference, and the maker wallet and Aqua allowance cover it.
+3. The hook `take`s the residual input, calls `WalletDeskRouter.swap` (gas-capped, in try/catch). The unmodified
+   SwapVM base calls `Aqua.pull` (maker → hook, output) and `Aqua.push` (hook → maker, input).
+4. The hook settles the maker's output into PoolManager and returns `BeforeSwapDelta(+residual, -out)`. The pool
+   swaps only the cap. The caller owes the full input and receives pool output plus desk output.
+5. If the SwapVM call reverts, the hook returns the residual (`sync` / transfer / `settle`), emits `DeskSkipped` and
+   `WouldRoute`, and returns a zero delta: the pool fills everything.
 
-`WouldRoute` is emitted when the swap is larger than the cap but the caller is not `OverflowRouter`, or no desk is registered after a cap exists. The pool then fills the whole swap and the maker wallet is not touched.
+## Off-chain
 
-## Arc
+- `services/cre/desk-guard`: Chainlink CRE workflow that writes the reference (see `docs/CRE.md`). CRE supports
+  Unichain Sepolia; the mainnet fork uses a simulator experimental chain.
+- `services/keeper`: indexes fills and skips; on a loopback RPC it posts the same median price as a local stand-in
+  for CRE and credits fork rebates.
 
-`FeeShareTreasury` accounts only in the 6-decimal ERC-20 USDC interface. Native Arc USDC is 18 decimals and is rejected if sent as value.
+## Rebates (optional)
 
-On Unichain Sepolia, `CctpFeeBridge` burns that USDC through Circle CCTP V2 toward Arc domain 26. Iris will not attest an anvil fork, so the local demo calls `creditFromFill` and the UI labels it `attestor`. Details and the addresses checked on 5 Nov 2026 are in `docs/CCTP.md`.
+`FeeShareTreasury` accounts only in the 6-decimal ERC-20 USDC interface; native Arc USDC (18 decimals) is rejected.
+`CctpFeeBridge` burns USDC toward Arc domain 26. Iris will not attest an anvil fork, so the local demo credits the
+treasury directly and the UI labels it `attestor`. Details: `docs/CCTP.md`.

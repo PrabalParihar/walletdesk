@@ -1,5 +1,9 @@
 # Arc treasury
 
+Status: optional. The default partner picks are 1inch, Uniswap and Chainlink (see `SUBMISSION.md`). Every Arc prize at
+ETHGlobal Mumbai requires Arc Studio as the starting point, and WalletDesk's core cannot run on Arc because Aqua is not
+deployed there. Use this only if you switch the third pick to Arc's stablecoin-logic track.
+
 Paste `FeeShareTreasury.sol` into an Arc Studio project and deploy it on Arc testnet. This file matches `contracts/src/FeeShareTreasury.sol`. There is no Studio URL in the repo. You create the project. Do not invent one.
 
 Studio docs: https://docs.arc.io/ai/arc-studio

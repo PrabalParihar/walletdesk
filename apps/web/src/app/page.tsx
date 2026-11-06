@@ -3,21 +3,21 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
 const steps = [
-  { n: "01", title: "Ship", body: "Approve Aqua and register a DeskBand strategy. Tokens stay in the wallet." },
-  { n: "02", title: "Catch overflow", body: "A large Uniswap v4 swap fills the pool up to a cap. The rest pulls from the maker." },
-  { n: "03", title: "Claim USDC", body: "On Unichain Sepolia, CCTP mints the fee as USDC on Arc. The local fork credits the same treasury directly." },
+  { n: "01", title: "Ship", body: "Approve Aqua and register a DeskBand strategy. Tokens stay in the wallet until a fill pulls them." },
+  { n: "02", title: "Catch overflow", body: "A large Uniswap v4 swap, through any router, fills the pool up to a cap. The best maker desk fills the rest." },
+  { n: "03", title: "Stay safe", body: "A Chainlink CRE workflow posts an off-chain reference price. Desks that drift from it, or from the pool, are skipped." },
 ];
 
 export default function HomePage() {
   return (
     <div className="flex flex-col gap-14">
       <section className="max-w-3xl">
-        <p className="mb-3 text-[13px] font-medium text-[#0066FA]">Uniswap v4 · Aqua SwapVM · Arc USDC</p>
+        <p className="mb-3 text-[13px] font-medium text-[#0066FA]">Uniswap v4 · 1inch Aqua SwapVM · Chainlink CRE</p>
         <h1 className="text-4xl font-semibold tracking-tight text-balance md:text-5xl">
           Turn idle tokens in your wallet into a Uniswap market.
         </h1>
         <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-[#5D5D66]">
-          Fees settle as USDC on Arc. WalletDesk keeps inventory in the maker wallet and fills the part of a swap the pool does not take.
+          WalletDesk keeps inventory in the maker wallet and fills the part of a swap the pool does not take, at a price checked against the pool and an off-chain reference.
         </p>
         <div className="mt-6 flex flex-wrap gap-3">
           <Button asChild size="lg">

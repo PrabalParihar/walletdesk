@@ -18,7 +18,16 @@ jobs:
       - name: Local tests
         run: forge test --no-match-contract OverflowForkTest --summary
       - name: Unichain fork tests
-        run: forge test --match-contract OverflowForkTest --summary
+        # The public RPC is load balanced. The suite already forks 10 blocks behind head; retry covers the rest.
+        run: |
+          for attempt in 1 2 3; do
+            forge test --match-contract OverflowForkTest --summary && exit 0
+            echo "fork attempt $attempt failed, retrying"
+            sleep 5
+          done
+          exit 1
+      - name: Contract sizes
+        run: forge build --sizes --skip test --skip script
 
   keeper:
     runs-on: ubuntu-latest
@@ -28,9 +37,25 @@ jobs:
         with:
           node-version: 22
       - name: Keeper unit tests
-        run: node --test services/keeper/scale.test.mjs
+        run: node --test services/keeper/scale.test.mjs services/keeper/reference.test.mjs
       - name: Treasury source matches the Arc paste file
         run: cmp contracts/src/FeeShareTreasury.sol arc/FeeShareTreasury.sol
+
+  cre:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/cre/desk-guard
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.4
+      - run: bun install --frozen-lockfile
+      - name: Typecheck
+        run: bun run typecheck
+      - name: Workflow unit tests
+        run: bun test
 
   web:
     runs-on: ubuntu-latest

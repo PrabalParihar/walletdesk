@@ -1,0 +1,26 @@
+# ==========================================================================
+# CRE project settings for WalletDesk (CRE CLI v1.39.0).
+# Run every `cre` command from this directory (services/cre).
+#
+# Targets:
+#   local-fork        anvil fork of Unichain mainnet (chain id 130) on 127.0.0.1:8545.
+#                     CRE does not support Unichain mainnet, so the chain is registered as a
+#                     simulator "experimental chain" (see cre-cli internal/settings/template/
+#                     project.yaml.tpl). The forwarder address must hold MockKeystoneForwarder
+#                     code on the fork; desk-guard/README.md shows how to etch it.
+#   unichain-sepolia  Unichain Sepolia (chain id 1301), a CRE-supported testnet. The simulator
+#                     already knows its MockKeystoneForwarder (0x6E9EE680ef59ef64Aa8C7371279c27E496b5eDc1).
+#
+# RPC URLs support ${VAR_NAME}; values come from .env or the shell.
+# ==========================================================================
+local-fork:
+  experimental-chains:
+    - chain-selector: 1923510103922296319 # ethereum-mainnet-unichain-1 (chain id 130)
+      rpc-url: "http://127.0.0.1:8545"
+      forwarder: "0x6E9EE680ef59ef64Aa8C7371279c27E496b5eDc1" # MockKeystoneForwarder etched onto the fork
+
+# ==========================================================================
+unichain-sepolia:
+  rpcs:
+    - chain-name: ethereum-testnet-sepolia-unichain-1
+      url: "https://sepolia.unichain.org"
