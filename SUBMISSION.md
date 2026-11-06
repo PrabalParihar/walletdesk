@@ -8,26 +8,53 @@ public is the second-to-last step below; Uniswap's rules require a public repo f
 
 ## Status of the code (branch `claude/admiring-galileo-aq0yo0`)
 
-Done and verified: 38 local tests, 20 Unichain-fork tests against the live PoolManager and Aqua, DemoSeed broadcast on
-a fork (OverflowRouter fill + Uniswap PoolSwapTest fill), mainnet deploy script rehearsed on a fork, keeper live on
-the fork, CRE workflow builds and its 16 tests pass, web lint + build. Merge the branch into `main` before you
-submit, or submit the branch URL.
+Done and verified:
+- 38 local tests, plus 21 fork tests against the live Unichain PoolManager and Aqua.
+- `./script/demo.sh` end to end.
+- Playwright drove the UI on the fork: a swap through Uniswap's PoolSwapTest filled from the desk, ship + register, and a rebate claim.
+- Mainnet and Sepolia deploy + seed rehearsed on forks.
+- The CRE workflow builds and its 16 tests pass.
+- Web lint + build, and CI green.
 
-## You must do these (in order)
+## Remaining steps (in order)
 
-| # | Step | Why | Where |
+| # | Step | Who | Status |
 | --- | --- | --- | --- |
-| 1 | `cre login`, then run the CRE simulation and paste its output into `services/cre/desk-guard/SIMULATION.md` | Chainlink requires "a successful simulation via the CRE CLI" | `docs/CRE.md` |
-| 2 | Deploy on Unichain mainnet with your own key (cheap gas, mock tokens), then ship + register from the UI and run one overflow swap. Paste the tx hashes into the README | Real on-chain transfers beat a fork for credibility | `README.md` → Deploy |
-| 3 | Optional: deploy on Unichain Sepolia with `DEPLOY_AQUA=true` and point the CRE workflow at it (CRE supports Sepolia, not mainnet) | A CRE run against a real chain | `docs/CRE.md` |
-| 4 | Export the Cursor agent prompts into `docs/prompts/01-cursor-v1.md` | ETHGlobal requires prompts for spec-driven work | `docs/prompts/` |
-| 5 | Make your own commits from now on (README tx hashes, video link, any tweak). Do not squash or rewrite history | "Proper Git commit history", and evidence of human work | — |
-| 6 | Record the video: 2–4 min, ≥720p, your own voice, not sped up, not on a phone | ETHGlobal rules | `docs/WALKTHROUGH.md` |
-| 7 | Make the repo public | Uniswap requires a public open-source repo | GitHub settings |
-| 8 | Submit the Uniswap feedback form with the link to `FEEDBACK.md` | Uniswap qualification | https://developers.uniswap.org/hackathon-feedback |
-| 9 | File the ETHGlobal submission, select 1inch, Uniswap Foundation, Chainlink, paste the text below | — | ETHGlobal dashboard |
+| 1 | Live deploy on Unichain mainnet: deploy, reference, ship, register, two overflow swaps | Claude, burner key funded by the team | Runs automatically once the burner `0xdC8415C8A712cDdD6Bf503d45b54DB29A1a4e759` holds ≥ 0.0005 ETH (full run costs ≈ 0.0001 ETH). Record: `docs/DEPLOYMENTS.md` |
+| 2 | Same on Unichain Sepolia (self-deployed Aqua), then hand the feed to the CRE mock forwarder | Claude, burner funded with Sepolia ETH | Runs automatically once funded |
+| 3 | `cre workflow simulate` (Chainlink requires a successful run) | You, on your machine (you are logged in) | Commands below. Paste the output into `services/cre/desk-guard/SIMULATION.md` |
+| 4 | Cursor prompts | Claude | Done as a labelled reconstruction: `docs/prompts/01-cursor-v1.md` (the session was not exported) |
+| 5 | Your own commits from here (SIMULATION.md output, any tweak). No squash or history rewrite | You | — |
+| 6 | Video: 2–4 min, ≥720p, your voice, not sped up, not a phone | You | `./script/demo.sh`, then use the **Demo maker / Demo taker** buttons; script in `docs/WALKTHROUGH.md` |
+| 7 | Make the repo public | You, right before filing | Uniswap requires it |
+| 8 | Uniswap feedback form with the link to `FEEDBACK.md` | You | https://developers.uniswap.org/hackathon-feedback |
+| 9 | File on ETHGlobal, select 1inch, Uniswap Foundation, Chainlink, paste the text below | You | Before 09:00 IST Sat 7 Nov |
 
-Leave at least two hours of buffer before 09:00 IST.
+### Step 3: the CRE simulation on your machine
+
+```bash
+git fetch origin && git checkout main && git pull
+cd services/cre/desk-guard && bun install && cd ..
+```
+
+Option A, Unichain Sepolia (CRE-supported). Use the Sepolia `DeskPriceFeed` and pool id from `docs/DEPLOYMENTS.md`:
+
+```bash
+node desk-guard/scripts/make-config.mjs --target unichain-sepolia --feed <DeskPriceFeed> --pool <poolId>
+cre workflow simulate desk-guard --target unichain-sepolia --non-interactive --trigger-index 0
+```
+
+A dry run is enough for the prize. To also land the report on chain, put a Unichain Sepolia key with a little ETH in
+`services/cre/.env` as `CRE_ETH_PRIVATE_KEY=...` (never commit it) and add `--broadcast`.
+
+Option B, your local fork (no testnet funds needed; the experimental-chain target is untested):
+
+```bash
+FEED_FORWARDER=0x6E9EE680ef59ef64Aa8C7371279c27E496b5eDc1 ./script/demo.sh   # in another terminal, from the repo root
+node desk-guard/scripts/etch-mock-forwarder.mjs
+node desk-guard/scripts/make-config.mjs
+cre workflow simulate desk-guard --target local-fork --non-interactive --trigger-index 0 --broadcast
+```
 
 ## Requirement map
 
@@ -37,7 +64,7 @@ Leave at least two hours of buffer before 09:00 IST.
 | --- | --- |
 | Official Aqua / SwapVM contracts; a redeployed modified SwapVM is allowed | Done. Live Aqua registry; `WalletDeskRouter` inherits unmodified SwapVM v1.0.2 and replaces the opcode table. `docs/SWAPVM_DIFF.md` |
 | Sophisticated position; custom SwapVM instructions score higher | Done. DeskBand opcode: value-weighted band in the v4 price unit, both directions, decay, fee; guarded by spot and CRE |
-| On-chain token transfers in the demo (local fork is fine) | Done. `./script/demo.sh` and the fork tests show Aqua `Pulled` / `Pushed`. Step 2 adds mainnet |
+| On-chain token transfers in the demo (local fork is fine) | Done. `./script/demo.sh` and the fork tests show Aqua `Pulled` / `Pushed`. Step 1 adds real mainnet transfers |
 | Proper commit history, no single-commit entries on the final day | Keep committing in small steps (step 5) |
 | License | `contracts/src/swapvm/` is SwapVM-1.1 with dated change notes; "Powered by SwapVM / Aqua" in README and UI footer |
 
@@ -55,14 +82,14 @@ Leave at least two hours of buffer before 09:00 IST.
 | --- | --- |
 | CRE workflow used as an orchestration layer, meaningfully used | Done. It is the hook's off-chain price guard; without a fresh reference, desks do not fill |
 | Connects a blockchain with an external API | Done. Coinbase + Kraken HTTP → `DeskPriceFeed` on chain |
-| Successful simulation via CRE CLI, or a live deployment | Step 1 (needs your CRE login) |
+| Successful simulation via CRE CLI, or a live deployment | Step 3, on your logged-in machine |
 
 ### ETHGlobal
 
 | Requirement | Status |
 | --- | --- |
 | Work started after hacking opened (21:00 IST 5 Nov) | First commit 00:38 IST 6 Nov |
-| AI use documented, with prompts and spec files | `AI.md`, `docs/prompts/`, `docs/spec/DESIGN.md`. Step 4 completes it |
+| AI use documented, with prompts and spec files | Done: `AI.md` (with team contribution), `docs/prompts/`, `docs/spec/DESIGN.md` |
 | Video 2–4 min | Step 6 |
 
 ## Paste for the submission form
