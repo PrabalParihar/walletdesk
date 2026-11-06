@@ -21,7 +21,7 @@ Powered by SwapVM — © Degensoft Ltd 2025 · Powered by Aqua — © Degensoft 
 | `DemoSeed` broadcast on a local fork | Ship, register, fill through `OverflowRouter`, fill through Uniswap's stock `PoolSwapTest` router, USDC rebate. `ONCHAIN EXECUTION COMPLETE & SUCCESSFUL` |
 | `DeployUnichainMainnet` rehearsed on the fork | Deploys against the live contracts; refuses without `CONFIRM_MAINNET=true` |
 | Keeper on the fork | Indexes fills (Aqua `Pulled` / `Pushed`) and skip reasons; posts a live USDT/USD reference (median of Coinbase and Kraken) |
-| Chainlink CRE workflow | `cre workflow build`, `tsc` and 16 SDK tests pass. Simulation against the live Sepolia feed: `./services/cre/simulate-sepolia.sh` (needs `cre login`); output in `services/cre/desk-guard/SIMULATION.md` |
+| Chainlink CRE workflow | **`cre workflow simulate` passed** against the live Sepolia `DeskPriceFeed`: Coinbase + Kraken → consensus 0.998950 → read the on-chain reference → report written. Output: `services/cre/desk-guard/SIMULATION.md`. 19 SDK tests, including one that reproduces the WASM engine's missing `URL` |
 | Web | `npm run lint` and `npm run build` pass. Playwright drove the real UI on the fork: a swap through Uniswap's PoolSwapTest filled from the desk, a maker shipped and registered a desk, and the maker claimed the USDC rebate, with no console errors |
 
 Worked numbers (equal shelves, 0.99–1.01 band, 30 bps): 5 in with a pool cap of 1 pulls `3.988` of the output token
@@ -85,7 +85,7 @@ Registry: `0x1111113CCf1426A8E30e2bfF5E005d929bF6a90a` (live on Unichain). The c
 | Hook reads the reference; missing or stale fails closed | `contracts/src/OverflowHook.sol:461` |
 | Tests: deviation skip, fresh fill, stale skip, forwarder auth, clock drift | `contracts/test/Overflow.t.sol` (`test_creReferenceGuard`, `test_feedRejectsStrangersAndRollbacks`, `test_feedUsesWriteTimeForFreshness`) |
 
-CRE supports Unichain Sepolia, not Unichain mainnet. Simulation steps and forwarder addresses: `docs/CRE.md`.
+CRE supports Unichain Sepolia, not Unichain mainnet. The simulation passed against the live Sepolia feed (`services/cre/desk-guard/SIMULATION.md`). Steps and forwarder addresses: `docs/CRE.md`.
 
 ## Demo
 
