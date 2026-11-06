@@ -106,6 +106,7 @@ export default function FeesPage() {
 
   return (
     <div className="grid gap-6">
+      <h1 className="text-2xl font-semibold tracking-tight md:text-[28px]">Rebates</h1>
       <Card>
         <CardHeader>
           <div className="flex flex-wrap items-center justify-between gap-2">

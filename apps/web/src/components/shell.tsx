@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useAccount, useConnect, useDisconnect } from "wagmi";
 import { mock } from "wagmi/connectors";
 
+import { JumpMenu } from "@/components/jump-menu";
 import { Button } from "@/components/ui/button";
 import { networkLabel, networkMode } from "@/lib/chains";
 import { addressUrl } from "@/lib/live";
@@ -36,15 +37,16 @@ export function Shell({ children }: { children: React.ReactNode }) {
       : [];
 
   return (
-    <div className="min-h-screen bg-white text-[#18181B]">
+    <div className="min-h-screen overflow-x-clip bg-white text-[#18181B] md:px-4">
       <a
         href="#main"
         className="sr-only z-30 rounded-md bg-[#18181B] px-3 py-2 text-[13px] text-white focus:not-sr-only focus:fixed focus:top-3 focus:left-3"
       >
         Skip to content
       </a>
-      <header className="sticky top-0 z-20 border-b border-black/8 bg-white/90 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 md:px-6">
+      <div className="wd-frame mx-auto flex min-h-screen max-w-6xl flex-col">
+      <header className="sticky top-0 z-20 border-b border-dashed border-black/15 bg-white/90 backdrop-blur">
+        <div className="flex items-center justify-between gap-4 px-4 py-3 md:px-6">
           <div className="flex items-center gap-2">
             <Link href="/" className="flex items-center gap-2 text-[15px] font-semibold tracking-tight">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -79,6 +81,8 @@ export function Shell({ children }: { children: React.ReactNode }) {
               </Link>
             ))}
           </nav>
+          <div className="flex items-center gap-2">
+          <JumpMenu />
           {isConnected ? (
             <Button variant="outline" size="sm" onClick={() => disconnect()}>
               <span className="font-mono text-xs">
@@ -100,13 +104,14 @@ export function Shell({ children }: { children: React.ReactNode }) {
                   {account.label}
                 </Button>
               ))}
-              <Button size="sm" disabled={!injected || isPending} onClick={() => injected && connect({ connector: injected })}>
+              <Button size="sm" variant="outline" disabled={!injected || isPending} onClick={() => injected && connect({ connector: injected })}>
                 {injected ? "Connect" : "No wallet"}
               </Button>
             </div>
           )}
+          </div>
         </div>
-        <nav className="flex gap-1 overflow-x-auto border-t border-black/8 px-4 py-2 sm:hidden">
+        <nav className="flex gap-1 overflow-x-auto border-t border-dashed border-black/15 px-4 py-2 sm:hidden">
           {links.map((link) => (
             <Link
               key={link.href}
@@ -122,16 +127,17 @@ export function Shell({ children }: { children: React.ReactNode }) {
           ))}
         </nav>
       </header>
-      <main id="main" tabIndex={-1} className="mx-auto max-w-6xl px-4 py-8 outline-none md:px-6 md:py-12">
+      <main id="main" tabIndex={-1} className="w-full flex-1 px-4 py-8 outline-none md:px-6 md:py-12">
         {children}
       </main>
-      <footer className="border-t border-black/8">
-        <div className="mx-auto flex max-w-6xl flex-wrap gap-x-4 gap-y-1 px-4 py-4 text-[12px] text-[#5D5D66] md:px-6">
+      <footer className="border-t border-dashed border-black/15">
+        <div className="flex flex-wrap gap-x-4 gap-y-1 px-4 py-4 font-mono text-[11px] text-[#5D5D66] md:px-6">
           <span>Powered by SwapVM — © Degensoft Ltd 2025</span>
           <span>Powered by Aqua — © Degensoft Ltd 2025</span>
           <span>Uniswap v4 hook · Chainlink CRE reference price</span>
         </div>
       </footer>
+      </div>
     </div>
   );
 }

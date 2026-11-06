@@ -1,7 +1,7 @@
 import { ArrowDown, ArrowRight, Clock, Lock, ShieldCheck, Split, TrendingDown, Wallet } from "lucide-react";
 import Link from "next/link";
 
-import { ExternalLink, InfoCard, SectionHeading, SplitBar, StatLink } from "@/components/site";
+import { Eyebrow, ExternalLink, InfoCard, SectionHeading, SplitBar, StatLink } from "@/components/site";
 import { Button } from "@/components/ui/button";
 import { REPO_URL, repoFile, SEPOLIA_DEPLOYMENT, SEPOLIA_EXPLORER, SEPOLIA_PROOF, txUrl } from "@/lib/live";
 
@@ -139,16 +139,14 @@ export default function HomePage() {
 
       {/* Problem → fix, row by row */}
       <section className="flex flex-col gap-6" aria-labelledby="problem-heading">
-        <div className="max-w-2xl">
-          <p className="text-[12px] font-semibold tracking-wide text-[#0066FA] uppercase">The problem, and the fix</p>
-          <h2 id="problem-heading" className="mt-2 text-2xl font-semibold tracking-tight text-balance md:text-[28px]">
-            On-chain liquidity is either deposited or stale.
-          </h2>
-          <p className="mt-3 text-[15px] leading-relaxed text-pretty text-[#5D5D66]">
-            Each problem is paired with the part of WalletDesk that answers it, and each part is built on one partner&apos;s stack.
-          </p>
-        </div>
-        <div className="hidden grid-cols-[1fr_2.5rem_1fr] text-[12px] font-semibold tracking-wide uppercase md:grid">
+        <SectionHeading
+          index="01"
+          id="problem-heading"
+          eyebrow="The problem, and the fix"
+          title="On-chain liquidity is either deposited or stale."
+          lead="Each problem is paired with the part of WalletDesk that answers it, and each part is built on one partner's stack."
+        />
+        <div className="hidden grid-cols-[1fr_2.5rem_1fr] border-b border-dashed border-black/15 pb-2 font-mono text-[11px] tracking-wider uppercase md:grid">
           <span className="text-[#BE123C]">The problem</span>
           <span />
           <span className="text-[#0050C8]">What WalletDesk does</span>
@@ -181,6 +179,7 @@ export default function HomePage() {
       {/* Proof */}
       <section className="flex flex-col gap-6">
         <SectionHeading
+          index="02"
           eyebrow="Proof"
           title="Running on chain, simulated on Chainlink CRE, covered by tests."
           lead="Every number below links to the transaction, the run log, or the test that backs it."
@@ -195,7 +194,9 @@ export default function HomePage() {
 
       {/* Judge path */}
       <section className="rounded-[16px] bg-[#18181B] p-6 text-white md:p-8" aria-labelledby="judge-heading">
-        <p className="text-[12px] font-semibold tracking-wide text-[#7CB4FF] uppercase">For judges</p>
+        <Eyebrow index="03" className="text-[#A1A1AA] [&>span:first-child]:text-[#7CB4FF]">
+          For judges
+        </Eyebrow>
         <h2 id="judge-heading" className="mt-2 text-2xl font-semibold tracking-tight text-balance md:text-[28px]">
           Judge it in five minutes.
         </h2>
@@ -212,7 +213,7 @@ export default function HomePage() {
                   {step.cta}
                 </ExternalLink>
               ) : (
-                <Link href={step.href ?? "/"} className="mt-3 inline-flex items-center gap-1 text-[13px] text-[#7CB4FF] underline-offset-2 hover:underline">
+                <Link href={step.href ?? "/"} className="mt-3 inline-flex items-center gap-1 text-[13px] text-[#7CB4FF] underline decoration-current/35 underline-offset-2 hover:decoration-current">
                   {step.cta}
                   <ArrowRight className="size-3.5" aria-hidden />
                 </Link>
