@@ -10,6 +10,26 @@
   --font-sans: var(--font-inter);
   --font-mono: var(--font-geist-mono);
   --font-heading: var(--font-inter);
+  /* WalletDesk theme tokens (values in :root and [data-theme="dark"] below) */
+  --color-ink: var(--wd-ink);
+  --color-body: var(--wd-body);
+  --color-muted-ink: var(--wd-muted);
+  --color-faint: var(--wd-faint);
+  --color-faint-strong: var(--wd-faint-strong);
+  --color-surface: var(--wd-surface);
+  --color-raised: var(--wd-raised);
+  --color-sunken: var(--wd-sunken);
+  --color-band: var(--wd-band);
+  --color-band-link: var(--wd-band-link);
+  --color-desk: var(--wd-desk);
+  --color-desk-ink: var(--wd-desk-ink);
+  --color-problem: var(--wd-problem);
+  --color-problem-soft: var(--wd-problem-soft);
+  --color-solution: var(--wd-solution);
+  --color-line: var(--wd-line);
+  --color-line-2: var(--wd-line-2);
+  --color-line-3: var(--wd-line-3);
+  --color-hover: var(--wd-hover);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -83,6 +103,26 @@
   --sidebar-ring: oklch(0.708 0 0);
   /* Uniswap pink, darkened just enough for white 13px labels to pass WCAG AA (5.1:1; #FF007A is 3.8:1). */
   --pool: #d6006f;
+
+  --wd-ink: #18181b;
+  --wd-body: #4a4a52;
+  --wd-muted: #5d5d66;
+  --wd-faint: #a1a1aa;
+  --wd-faint-strong: #71717a;
+  --wd-surface: #ffffff;
+  --wd-raised: #fafafb;
+  --wd-sunken: #f2f2f3;
+  --wd-band: #18181b;
+  --wd-band-link: #7cb4ff;
+  --wd-desk: #0066fa;
+  --wd-desk-ink: #0050c8;
+  --wd-problem: #be123c;
+  --wd-problem-soft: #fff7f8;
+  --wd-solution: #f5f9ff;
+  --wd-line: rgba(0, 0, 0, 0.08);
+  --wd-line-2: rgba(0, 0, 0, 0.1);
+  --wd-line-3: rgba(0, 0, 0, 0.15);
+  --wd-hover: rgba(0, 0, 0, 0.05);
 }
 
 .dark {

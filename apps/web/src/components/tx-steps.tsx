@@ -33,7 +33,7 @@ export function useTxSteps() {
 export function TxSteps({ steps, explorer }: { steps: Step[]; explorer?: string }) {
   if (steps.length === 0) return null;
   return (
-    <ol className="grid gap-1.5 rounded-[10px] border border-black/8 bg-[#FAFAFB] p-3 text-[13px]" aria-live="polite" aria-label="Transaction progress">
+    <ol className="grid gap-1.5 rounded-[10px] border border-line bg-raised p-3 text-[13px]" aria-live="polite" aria-label="Transaction progress">
       {steps.map((step, index) => {
         const href = step.hash ? txUrl(explorer, step.hash) : undefined;
         return (
@@ -42,7 +42,7 @@ export function TxSteps({ steps, explorer }: { steps: Step[]; explorer?: string 
               className={cn(
                 "flex size-5 shrink-0 items-center justify-center rounded-full",
                 step.state === "done" && "bg-[#047857] text-white",
-                step.state === "active" && "text-[#0066FA]",
+                step.state === "active" && "text-desk",
                 step.state === "error" && "bg-[#BE123C] text-white",
               )}
               aria-hidden
@@ -51,7 +51,7 @@ export function TxSteps({ steps, explorer }: { steps: Step[]; explorer?: string 
               {step.state === "error" ? <X className="size-3" strokeWidth={3} /> : null}
               {step.state === "active" ? <LoaderCircle className="size-4 motion-safe:animate-spin" /> : null}
             </span>
-            <span className={cn("flex-1", step.state === "active" ? "text-[#18181B]" : "text-[#4A4A52]")}>
+            <span className={cn("flex-1", step.state === "active" ? "text-ink" : "text-body")}>
               {step.label}
               {step.state === "active" ? (step.hash ? " · waiting for the block" : " · confirm in your wallet") : null}
               <span className="sr-only">{step.state === "done" ? " (done)" : step.state === "error" ? " (failed)" : " (in progress)"}</span>

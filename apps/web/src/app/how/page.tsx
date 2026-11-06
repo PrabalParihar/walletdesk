@@ -93,7 +93,7 @@ export default function HowPage() {
           title="One swap, two sources of liquidity, one transaction."
           lead="The Uniswap pool fills what it should. A maker's wallet fills the overflow through 1inch Aqua. Chainlink CRE keeps the maker's price honest."
         />
-        <figure className="overflow-hidden rounded-[14px] border border-black/8 bg-white">
+        <figure className="overflow-hidden rounded-[14px] border border-line bg-surface">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/architecture.svg" alt="WalletDesk architecture: maker wallet, Aqua registry, WalletDeskRouter, OverflowHook, v4 PoolManager, any v4 router, DeskPriceFeed, and the Chainlink CRE desk-guard workflow" className="w-full" />
         </figure>
@@ -103,10 +103,10 @@ export default function HowPage() {
         <SectionHeading index="01" eyebrow="Step by step" title="What happens on chain" />
         <ol className="grid gap-3 md:grid-cols-5">
           {steps.map((s, i) => (
-            <li key={s.title} className="rounded-[12px] border border-black/8 bg-white p-4">
-              <span className="flex size-7 items-center justify-center rounded-full bg-[#18181B] text-[13px] font-medium text-white">{i + 1}</span>
+            <li key={s.title} className="rounded-[12px] border border-line bg-surface p-4">
+              <span className="flex size-7 items-center justify-center rounded-full bg-band text-[13px] font-medium text-white">{i + 1}</span>
               <h3 className="mt-3 text-[14px] font-semibold">{s.title}</h3>
-              <p className="mt-1.5 text-[13px] leading-relaxed text-[#4A4A52]">{s.body}</p>
+              <p className="mt-1.5 text-[13px] leading-relaxed text-body">{s.body}</p>
             </li>
           ))}
         </ol>
@@ -119,9 +119,9 @@ export default function HowPage() {
           title="A desk can be skipped. A swap is never blocked."
           lead="Every desk problem is a skip, logged as DeskSkipped with a reason. With no desk left, the pool fills the whole swap. The pool spot alone can be pushed inside one transaction; the off-chain CRE reference can't."
         />
-        <div className="overflow-hidden rounded-[12px] border border-black/8">
+        <div className="overflow-hidden rounded-[12px] border border-line">
           <table className="w-full text-left text-[13px]">
-            <thead className="bg-[#F2F2F3] text-[#5D5D66]">
+            <thead className="bg-sunken text-muted-ink">
               <tr>
                 <th className="px-4 py-2.5 font-medium">Skip reason</th>
                 <th className="px-4 py-2.5 font-medium">When</th>
@@ -129,9 +129,9 @@ export default function HowPage() {
             </thead>
             <tbody>
               {skips.map(([reason, when]) => (
-                <tr key={reason} className="border-t border-black/8 align-top">
+                <tr key={reason} className="border-t border-line align-top">
                   <td className="px-4 py-2.5 font-medium whitespace-nowrap">{reason}</td>
-                  <td className="px-4 py-2.5 text-[#4A4A52]">{when}</td>
+                  <td className="px-4 py-2.5 text-body">{when}</td>
                 </tr>
               ))}
             </tbody>
@@ -144,20 +144,20 @@ export default function HowPage() {
         <div className="grid gap-4 md:grid-cols-3">
           {partners.map((p) => (
             <InfoCard key={p.title} tag={p.tag} title={p.title} tone="solution">
-              <ul className="-mx-1 divide-y divide-dashed divide-black/10">
+              <ul className="-mx-1 divide-y divide-dashed divide-line-2">
                 {p.points.map(([label, href]) => (
                   <li key={label}>
                     <a
                       href={href}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="group flex items-start justify-between gap-3 rounded-md px-1 py-2 transition-colors hover:bg-white"
+                      className="group flex items-start justify-between gap-3 rounded-md px-1 py-2 transition-colors hover:bg-surface"
                     >
                       <span className="min-w-0">
-                        <span className="block text-[13px] text-[#18181B] group-hover:text-[#0066FA]">{label}</span>
-                        <span className="mt-0.5 block font-mono text-[11px] text-[#5D5D66]">{codeRef(href)}</span>
+                        <span className="block text-[13px] text-ink group-hover:text-desk">{label}</span>
+                        <span className="mt-0.5 block font-mono text-[11px] text-muted-ink">{codeRef(href)}</span>
                       </span>
-                      <ArrowUpRight className="mt-0.5 size-3.5 shrink-0 text-[#5D5D66] group-hover:text-[#0066FA]" aria-hidden />
+                      <ArrowUpRight className="mt-0.5 size-3.5 shrink-0 text-muted-ink group-hover:text-desk" aria-hidden />
                     </a>
                   </li>
                 ))}
@@ -181,9 +181,9 @@ export default function HowPage() {
         </InfoCard>
         <InfoCard title="Try it">
           <p>
-            The <Link href="/live" className="text-[#0066FA] underline decoration-current/35 underline-offset-2 hover:decoration-current">live page</Link> reads the Unichain Sepolia
+            The <Link href="/live" className="text-desk underline decoration-current/35 underline-offset-2 hover:decoration-current">live page</Link> reads the Unichain Sepolia
             deployment: maker balances, the price guard, the last fill. With a little Sepolia ETH you can mint test tokens and run an overflow swap
-            yourself, or <Link href="/desk" className="text-[#0066FA] underline decoration-current/35 underline-offset-2 hover:decoration-current">ship your own desk</Link>.
+            yourself, or <Link href="/desk" className="text-desk underline decoration-current/35 underline-offset-2 hover:decoration-current">ship your own desk</Link>.
           </p>
           <p className="mt-3">
             Every transaction from the live run: <ExternalLink href={repoFile("docs/DEPLOYMENTS.md")}>docs/DEPLOYMENTS.md</ExternalLink>.

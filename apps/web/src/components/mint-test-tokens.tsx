@@ -61,7 +61,7 @@ export function MintTestTokens({
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-2 text-[12px] text-[#5D5D66]">
+    <div className="flex flex-wrap items-center gap-2 text-[12px] text-muted-ink">
       <Button type="button" size="sm" variant="outline" disabled={!isConnected || state.busy} onClick={() => void mint()}>
         {state.busy ? "Minting…" : `Get ${amount} test ${which === "both" ? `${deployment.symbol0} + ${deployment.symbol1}` : deployment.symbol0}`}
       </Button>

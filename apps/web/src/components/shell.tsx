@@ -37,15 +37,15 @@ export function Shell({ children }: { children: React.ReactNode }) {
       : [];
 
   return (
-    <div className="min-h-screen overflow-x-clip bg-white text-[#18181B] md:px-4">
+    <div className="min-h-screen overflow-x-clip bg-surface text-ink md:px-4">
       <a
         href="#main"
-        className="sr-only z-30 rounded-md bg-[#18181B] px-3 py-2 text-[13px] text-white focus:not-sr-only focus:fixed focus:top-3 focus:left-3"
+        className="sr-only z-30 rounded-md bg-band px-3 py-2 text-[13px] text-white focus:not-sr-only focus:fixed focus:top-3 focus:left-3"
       >
         Skip to content
       </a>
       <div className="wd-frame mx-auto flex min-h-screen max-w-6xl flex-col">
-      <header className="sticky top-0 z-20 border-b border-dashed border-black/15 bg-white/90 backdrop-blur">
+      <header className="sticky top-0 z-20 border-b border-dashed border-line-3 bg-surface/90 backdrop-blur">
         <div className="flex items-center justify-between gap-4 px-4 py-3 md:px-6">
           <div className="flex items-center gap-2">
             <Link href="/" className="flex items-center gap-2 text-[15px] font-semibold tracking-tight">
@@ -73,8 +73,8 @@ export function Shell({ children }: { children: React.ReactNode }) {
                 href={link.href}
                 aria-current={pathname === link.href ? "page" : undefined}
                 className={cn(
-                  "rounded-lg px-3 py-1.5 text-[13px] text-[#5D5D66] transition-colors hover:text-[#18181B]",
-                  pathname === link.href && "bg-[#F2F2F3] text-[#18181B]",
+                  "rounded-lg px-3 py-1.5 text-[13px] text-muted-ink transition-colors hover:text-ink",
+                  pathname === link.href && "bg-sunken text-ink",
                 )}
               >
                 {link.label}
@@ -88,7 +88,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
               <span className="font-mono text-xs">
                 {address?.slice(0, 6)}…{address?.slice(-4)}
               </span>
-              <span className="text-[#5D5D66]">{chain?.name ?? "wallet"}</span>
+              <span className="text-muted-ink">{chain?.name ?? "wallet"}</span>
             </Button>
           ) : (
             <div className="flex items-center gap-2">
@@ -111,15 +111,15 @@ export function Shell({ children }: { children: React.ReactNode }) {
           )}
           </div>
         </div>
-        <nav className="flex gap-1 overflow-x-auto border-t border-dashed border-black/15 px-4 py-2 sm:hidden">
+        <nav className="flex gap-1 overflow-x-auto border-t border-dashed border-line-3 px-4 py-2 sm:hidden">
           {links.map((link) => (
             <Link
               key={link.href}
               href={link.href}
               aria-current={pathname === link.href ? "page" : undefined}
               className={cn(
-                "shrink-0 rounded-lg px-3 py-1.5 text-[13px] text-[#5D5D66]",
-                pathname === link.href && "bg-[#F2F2F3] text-[#18181B]",
+                "shrink-0 rounded-lg px-3 py-1.5 text-[13px] text-muted-ink",
+                pathname === link.href && "bg-sunken text-ink",
               )}
             >
               {link.label}
@@ -130,8 +130,8 @@ export function Shell({ children }: { children: React.ReactNode }) {
       <main id="main" tabIndex={-1} className="w-full flex-1 px-4 py-8 outline-none md:px-6 md:py-12">
         {children}
       </main>
-      <footer className="border-t border-dashed border-black/15">
-        <div className="flex flex-wrap gap-x-4 gap-y-1 px-4 py-4 font-mono text-[11px] text-[#5D5D66] md:px-6">
+      <footer className="border-t border-dashed border-line-3">
+        <div className="flex flex-wrap gap-x-4 gap-y-1 px-4 py-4 font-mono text-[11px] text-muted-ink md:px-6">
           <span>Powered by SwapVM — © Degensoft Ltd 2025</span>
           <span>Powered by Aqua — © Degensoft Ltd 2025</span>
           <span>Uniswap v4 hook · Chainlink CRE reference price</span>

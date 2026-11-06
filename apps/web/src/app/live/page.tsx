@@ -271,15 +271,15 @@ export default function LivePage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <section className="rounded-[14px] border border-black/8 bg-[#FAFAFB] p-5 md:p-6">
+      <section className="rounded-[14px] border border-line bg-raised p-5 md:p-6">
         <h1 className="text-2xl font-semibold tracking-tight md:text-[28px]">Live overflow</h1>
-        <p className="mt-2 max-w-3xl text-[14px] leading-relaxed text-[#4A4A52]">
+        <p className="mt-2 max-w-3xl text-[14px] leading-relaxed text-body">
           This page reads the deployed contracts directly. The maker&apos;s tokens sit in a normal wallet; Aqua only tracks a virtual
           shelf. Send a swap larger than the pool cap and the hook fills the overflow from that wallet, if the price guard agrees.
         </p>
         {deployment ? (
           <div className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
-            <ul className="divide-y divide-dashed divide-black/10 rounded-[10px] border border-black/8 bg-white" aria-label="Deployed contracts">
+            <ul className="divide-y divide-dashed divide-line-2 rounded-[10px] border border-line bg-surface" aria-label="Deployed contracts">
               {(
                 [
                   ["OverflowHook", "Uniswap v4 hook", deployment.hook],
@@ -290,8 +290,8 @@ export default function LivePage() {
                 addr ? (
                   <li key={name} className="flex flex-wrap items-center gap-x-2 gap-y-1 px-3 py-2 text-[13px]">
                     <span className="font-medium">{name}</span>
-                    <span className="text-[#5D5D66]">· {role}</span>
-                    <span className="ml-auto inline-flex items-center gap-1 font-mono text-[12px] text-[#4A4A52]">
+                    <span className="text-muted-ink">· {role}</span>
+                    <span className="ml-auto inline-flex items-center gap-1 font-mono text-[12px] text-body">
                       <span title={addr}>{`${addr.slice(0, 6)}…${addr.slice(-4)}`}</span>
                       <CopyButton value={addr} label={`${name} address`} />
                       {addressUrl(explorer, addr) ? (
@@ -299,7 +299,7 @@ export default function LivePage() {
                           href={addressUrl(explorer, addr)}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex size-6 items-center justify-center rounded-md text-[#0066FA] hover:bg-[#0066FA]/10"
+                          className="inline-flex size-6 items-center justify-center rounded-md text-desk hover:bg-desk/10"
                           aria-label={`${name} on the explorer`}
                           title="Open on the explorer"
                         >
@@ -330,9 +330,9 @@ export default function LivePage() {
             ) : null}
             {state.status === "error" ? <Notice tone="error">{state.error}</Notice> : null}
             {deployment && balances ? (
-              <div className="overflow-hidden rounded-[10px] border border-black/8">
+              <div className="overflow-hidden rounded-[10px] border border-line">
                 <table className="w-full text-left">
-                  <thead className="bg-[#F2F2F3] text-[#5D5D66]">
+                  <thead className="bg-sunken text-muted-ink">
                     <tr>
                       <th className="px-3 py-2 font-medium">Side</th>
                       <th className="px-3 py-2 font-medium">Wallet</th>
@@ -346,7 +346,7 @@ export default function LivePage() {
                 </table>
               </div>
             ) : deployment && loading ? (
-              <p className="text-[#5D5D66]">Reading the chain…</p>
+              <p className="text-muted-ink">Reading the chain…</p>
             ) : null}
             {error ? <Notice tone="error">{error}</Notice> : null}
           </CardContent>
@@ -359,12 +359,12 @@ export default function LivePage() {
                 {deployment?.priceFeed ? (referenceFresh ? "CRE reference fresh" : "CRE reference stale") : "spot only"}
               </Badge>
             </div>
-            <p className="text-[13px] text-[#5D5D66]">
+            <p className="text-[13px] text-muted-ink">
               A desk fills only when its quote is within the maker&apos;s limit ({deployment?.maxDeviationBps ?? 100} bps on the seeded desk) of both
               the pool spot and the Chainlink CRE reference. Otherwise the pool takes the whole swap.
             </p>
           </CardHeader>
-          <CardContent className="overflow-hidden rounded-[10px] border border-black/8 p-0 text-[13px]">
+          <CardContent className="overflow-hidden rounded-[10px] border border-line p-0 text-[13px]">
             <table className="w-full">
               <tbody>
                 <Line label="Pool spot" value={guard ? formatPriceX18(guard.spotX18, d0, d1) : "…"} />
@@ -389,7 +389,7 @@ export default function LivePage() {
       <Card className="shadow-[0_8px_30px_rgba(0,0,0,0.04)]">
         <CardHeader>
           <CardTitle>Overflow fill</CardTitle>
-          <p className="text-[13px] text-[#5D5D66]">
+          <p className="text-[13px] text-muted-ink">
             Amounts above the pool cap are filled from the best maker desk. Try both routers: the desk fills Uniswap&apos;s own
             PoolSwapTest the same way it fills ours.
           </p>
@@ -404,7 +404,7 @@ export default function LivePage() {
             />
           ) : null}
           {fill ? (
-            <div className="overflow-hidden rounded-[10px] border border-black/8 text-[13px]">
+            <div className="overflow-hidden rounded-[10px] border border-line text-[13px]">
               <table className="w-full">
                 <tbody>
                   <Line label="Maker" value={fill.maker} copy="maker address" />
@@ -416,13 +416,13 @@ export default function LivePage() {
               </table>
             </div>
           ) : (
-            <p className="rounded-[10px] border border-dashed border-black/15 bg-[#F2F2F3] px-3 py-6 text-center text-[13px] text-[#5D5D66]">
+            <p className="rounded-[10px] border border-dashed border-line-3 bg-sunken px-3 py-6 text-center text-[13px] text-muted-ink">
               No overflow fill on this pool yet.
             </p>
           )}
           {keeper[0] ? (
             <div className="space-y-2 text-[13px]">
-              <p className="text-[#5D5D66]">Keeper: Aqua transfers in the last fill</p>
+              <p className="text-muted-ink">Keeper: Aqua transfers in the last fill</p>
               <p className="break-all font-mono text-xs">{keeper[0].txHash}</p>
               {keeper[0].transfers.map((transfer, index) => (
                 <p key={`${transfer.event}-${index}`}>
@@ -454,14 +454,14 @@ export default function LivePage() {
             <Input id="swap-size" inputMode="decimal" autoComplete="off" value={swapSize} onChange={(event) => setSwapSize(event.target.value)} />
           </div>
           {plannedSize > 0 && guard ? (
-            <div className="grid gap-2 rounded-[10px] border border-black/8 p-3">
-              <p className="text-[12px] font-medium text-[#5D5D66]">How this swap would split</p>
+            <div className="grid gap-2 rounded-[10px] border border-line p-3">
+              <p className="text-[12px] font-medium text-muted-ink">How this swap would split</p>
               <SplitBar total={plannedSize} poolPart={plannedPool} symbol={deployment?.symbol0 ?? ""} />
-              <p className="text-[13px] leading-relaxed text-[#4A4A52]">
+              <p className="text-[13px] leading-relaxed text-body">
                 {plannedDesk > 0 ? (
                   <>
-                    The pool fills <Amount value={plannedPool} className="font-medium text-[#18181B]" /> {deployment?.symbol0}; the best desk that
-                    passes the price guard fills the other <Amount value={plannedDesk} className="font-medium text-[#18181B]" /> {deployment?.symbol0}.
+                    The pool fills <Amount value={plannedPool} className="font-medium text-ink" /> {deployment?.symbol0}; the best desk that
+                    passes the price guard fills the other <Amount value={plannedDesk} className="font-medium text-ink" /> {deployment?.symbol0}.
                     If no desk passes, the pool fills it all.
                   </>
                 ) : (
@@ -524,7 +524,7 @@ function BalanceRow({
   decimals: number;
 }) {
   return (
-    <tr className="border-t border-black/8">
+    <tr className="border-t border-line">
       <td className="px-3 py-2">{symbol}</td>
       <td className="px-3 py-2 font-mono tabular-nums">{formatAmount(wallet, decimals)}</td>
       <td className="px-3 py-2 font-mono tabular-nums">{virtual === null ? "not shipped" : formatAmount(virtual, decimals)}</td>
@@ -534,8 +534,8 @@ function BalanceRow({
 
 function Line({ label, value, copy }: { label: string; value: string; copy?: string }) {
   return (
-    <tr className="border-t border-black/8 first:border-t-0">
-      <td className="px-3 py-2 align-top text-[#5D5D66]">{label}</td>
+    <tr className="border-t border-line first:border-t-0">
+      <td className="px-3 py-2 align-top text-muted-ink">{label}</td>
       <td className="px-3 py-2 text-right font-mono text-xs break-all tabular-nums">
         {copy ? (
           <span className="inline-flex items-center justify-end gap-1">
