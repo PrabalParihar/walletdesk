@@ -18,7 +18,7 @@ export function ExternalLink({
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className={cn("inline-flex items-center gap-0.5 text-[#0066FA] underline-offset-2 hover:underline", className)}
+      className={cn("inline-flex items-center gap-0.5 text-[#0066FA] underline decoration-current/35 underline-offset-2 hover:decoration-current", className)}
     >
       {children}
       <ArrowUpRight className="size-3.5 shrink-0" aria-hidden />
@@ -26,15 +26,39 @@ export function ExternalLink({
   );
 }
 
-export function Eyebrow({ children }: { children: React.ReactNode }) {
-  return <p className="text-[12px] font-semibold tracking-wide text-[#0066FA] uppercase">{children}</p>;
+/** Section label: a two-digit index and a monospace caption, so a long page reads as numbered parts. */
+export function Eyebrow({ children, index, className }: { children: React.ReactNode; index?: string; className?: string }) {
+  return (
+    <p className={cn("flex items-center gap-2 font-mono text-[12px] tracking-wider text-[#5D5D66] uppercase", className)}>
+      {index ? <span className="text-[#0066FA]">{index}</span> : null}
+      <span>{children}</span>
+    </p>
+  );
 }
 
-export function SectionHeading({ eyebrow, title, lead }: { eyebrow: string; title: string; lead?: string }) {
+export function SectionHeading({
+  eyebrow,
+  title,
+  lead,
+  index,
+  id,
+  level = 2,
+}: {
+  eyebrow: string;
+  title: string;
+  lead?: string;
+  index?: string;
+  id?: string;
+  /** 1 when this heading is the page title. */
+  level?: 1 | 2;
+}) {
+  const Heading = level === 1 ? "h1" : "h2";
   return (
     <div className="max-w-2xl">
-      <Eyebrow>{eyebrow}</Eyebrow>
-      <h2 className="mt-2 text-2xl font-semibold tracking-tight text-balance md:text-[28px]">{title}</h2>
+      <Eyebrow index={index}>{eyebrow}</Eyebrow>
+      <Heading id={id} className="mt-2 text-2xl font-semibold tracking-tight text-balance md:text-[28px]">
+        {title}
+      </Heading>
       {lead ? <p className="mt-3 text-[15px] leading-relaxed text-[#5D5D66]">{lead}</p> : null}
     </div>
   );
@@ -79,7 +103,7 @@ export function InfoCard({
       {tag ? (
         <p
           className={cn(
-            "mb-2 text-[11px] font-semibold tracking-wide uppercase",
+            "mb-2 font-mono text-[11px] tracking-wider uppercase",
             tone === "problem" ? "text-[#BE123C]" : "text-[#0066FA]",
           )}
         >

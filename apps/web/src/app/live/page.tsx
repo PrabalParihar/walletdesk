@@ -1,8 +1,9 @@
 "use client";
 
+import { ArrowUpRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import { createPublicClient, formatUnits, http, parseUnits } from "viem";
-import { useAccount, useChainId, usePublicClient, useSwitchChain, useWriteContract } from "wagmi";
+import { useAccount, useChainId, useConnect, usePublicClient, useSwitchChain, useWriteContract } from "wagmi";
 
 import { Notice } from "@/components/notice";
 import { Badge } from "@/components/ui/badge";
@@ -73,6 +74,8 @@ export default function LivePage() {
   const { switchChainAsync } = useSwitchChain();
   const walletClient = usePublicClient();
   const { writeContractAsync } = useWriteContract();
+  const { connect, connectors, isPending: connecting, error: connectError } = useConnect();
+  const injected = connectors[0];
   const [swapSize, setSwapSize] = useState("5");
   const [route, setRoute] = useState<"overflow" | "stock">("overflow");
   const [fill, setFill] = useState<Fill | null>(null);
@@ -275,21 +278,39 @@ export default function LivePage() {
           shelf. Send a swap larger than the pool cap and the hook fills the overflow from that wallet, if the price guard agrees.
         </p>
         {deployment ? (
-          <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-[13px]">
-            <span className="inline-flex items-center gap-1">
-              <ExternalLink href={addressUrl(explorer, deployment.hook)}>OverflowHook</ExternalLink>
-              <CopyButton value={deployment.hook} label="OverflowHook address" />
-            </span>
-            {deployment.priceFeed ? (
-              <span className="inline-flex items-center gap-1">
-                <ExternalLink href={addressUrl(explorer, deployment.priceFeed)}>DeskPriceFeed (CRE)</ExternalLink>
-                <CopyButton value={deployment.priceFeed} label="DeskPriceFeed address" />
-              </span>
-            ) : null}
-            <span className="inline-flex items-center gap-1">
-              <ExternalLink href={addressUrl(explorer, deployment.maker)}>Maker wallet</ExternalLink>
-              <CopyButton value={deployment.maker} label="maker wallet address" />
-            </span>
+          <div className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+            <ul className="divide-y divide-dashed divide-black/10 rounded-[10px] border border-black/8 bg-white" aria-label="Deployed contracts">
+              {(
+                [
+                  ["OverflowHook", "Uniswap v4 hook", deployment.hook],
+                  ["DeskPriceFeed", "Chainlink CRE consumer", deployment.priceFeed],
+                  ["Maker wallet", "the desk's inventory stays here", deployment.maker],
+                ] as const
+              ).map(([name, role, addr]) =>
+                addr ? (
+                  <li key={name} className="flex flex-wrap items-center gap-x-2 gap-y-1 px-3 py-2 text-[13px]">
+                    <span className="font-medium">{name}</span>
+                    <span className="text-[#5D5D66]">· {role}</span>
+                    <span className="ml-auto inline-flex items-center gap-1 font-mono text-[12px] text-[#4A4A52]">
+                      <span title={addr}>{`${addr.slice(0, 6)}…${addr.slice(-4)}`}</span>
+                      <CopyButton value={addr} label={`${name} address`} />
+                      {addressUrl(explorer, addr) ? (
+                        <a
+                          href={addressUrl(explorer, addr)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex size-6 items-center justify-center rounded-md text-[#0066FA] hover:bg-[#0066FA]/10"
+                          aria-label={`${name} on the explorer`}
+                          title="Open on the explorer"
+                        >
+                          <ArrowUpRight className="size-3.5" aria-hidden />
+                        </a>
+                      ) : null}
+                    </span>
+                  </li>
+                ) : null,
+              )}
+            </ul>
             <MintTestTokens deployment={deployment} which="token0" />
           </div>
         ) : null}
@@ -353,7 +374,7 @@ export default function LivePage() {
                     !deployment?.priceFeed
                       ? "no feed"
                       : guard?.referenceX18
-                        ? `${formatPriceX18(guard.referenceX18, d0, d1)} · ${humanAge(guard.referenceAge ?? 0)} old`
+                        ? `${formatPriceX18(guard.referenceX18, d0, d1)} · ${humanAge(guard.referenceAge ?? 0)} old, limit ${humanAge(guard.maxReferenceAge)}`
                         : "none yet"
                   }
                 />
@@ -461,9 +482,22 @@ export default function LivePage() {
               )}
             </Notice>
           ) : null}
-          <Button type="button" onClick={() => void runSwap()} disabled={busy || !isConnected || !deployment}>
-            {busy ? "Swapping" : isConnected ? "Run overflow" : "Connect the taker"}
-          </Button>
+          {isConnected ? (
+            <Button type="button" onClick={() => void runSwap()} disabled={busy || !deployment}>
+              {busy ? "Swapping…" : "Run overflow"}
+            </Button>
+          ) : (
+            // A disabled "Connect" button looks clickable and does nothing; this one connects.
+            <Button type="button" variant="outline" disabled={!injected || connecting} onClick={() => injected && connect({ connector: injected })}>
+              {injected ? "Connect a wallet to swap" : "No browser wallet found"}
+            </Button>
+          )}
+          {!isConnected && connectError ? (
+            <Notice tone="error">
+              Could not connect a wallet ({connectError.message.split(".")[0]}). Install a browser wallet on Unichain Sepolia, or run the local demo
+              with ./script/demo.sh.
+            </Notice>
+          ) : null}
         </CardContent>
       </Card>
       </div>
@@ -474,7 +508,8 @@ export default function LivePage() {
 function humanAge(seconds: number): string {
   if (seconds < 120) return `${seconds}s`;
   if (seconds < 7200) return `${Math.round(seconds / 60)} min`;
-  return `${Math.round(seconds / 3600)} h`;
+  if (seconds < 172800) return `${Math.round(seconds / 3600)} h`;
+  return `${Math.round(seconds / 86400)} d`;
 }
 
 function BalanceRow({

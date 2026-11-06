@@ -157,3 +157,27 @@
     clip-path: inset(0 0 0 0 round 10px);
   }
 }
+
+/* Page frame: the content column sits between two hatched rails, like a sheet on a drafting table. */
+@media (min-width: 768px) {
+  .wd-frame {
+    position: relative;
+  }
+  .wd-frame::before,
+  .wd-frame::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 13px;
+    border-inline: 1px solid rgba(0, 0, 0, 0.08);
+    background-image: repeating-linear-gradient(-45deg, rgba(0, 0, 0, 0.07) 0 1px, transparent 1px 6px);
+    pointer-events: none;
+  }
+  .wd-frame::before {
+    left: -14px;
+  }
+  .wd-frame::after {
+    right: -14px;
+  }
+}

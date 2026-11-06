@@ -1,8 +1,17 @@
+import { ArrowUpRight } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
 import { ExternalLink, InfoCard, SectionHeading } from "@/components/site";
 import { repoFile } from "@/lib/live";
+
+/** "contracts/src/OverflowHook.sol#L270" → "OverflowHook.sol:270", shown under each link like a listing's meta line. */
+function codeRef(href: string): string {
+  const path = href.split("/blob/main/")[1] ?? href;
+  const [file, line] = path.split("#L");
+  const name = file.split("/").pop() ?? file;
+  return line ? `${name}:${line}` : name;
+}
 
 export const metadata: Metadata = {
   title: "How it works",
@@ -79,6 +88,7 @@ export default function HowPage() {
     <div className="flex flex-col gap-14">
       <section className="flex flex-col gap-6">
         <SectionHeading
+          level={1}
           eyebrow="How it works"
           title="One swap, two sources of liquidity, one transaction."
           lead="The Uniswap pool fills what it should. A maker's wallet fills the overflow through 1inch Aqua. Chainlink CRE keeps the maker's price honest."
@@ -90,7 +100,7 @@ export default function HowPage() {
       </section>
 
       <section className="flex flex-col gap-6">
-        <SectionHeading eyebrow="Step by step" title="What happens on chain" />
+        <SectionHeading index="01" eyebrow="Step by step" title="What happens on chain" />
         <ol className="grid gap-3 md:grid-cols-5">
           {steps.map((s, i) => (
             <li key={s.title} className="rounded-[12px] border border-black/8 bg-white p-4">
@@ -104,6 +114,7 @@ export default function HowPage() {
 
       <section className="grid gap-8 lg:grid-cols-[0.8fr_1.2fr]">
         <SectionHeading
+          index="02"
           eyebrow="The price guard"
           title="A desk can be skipped. A swap is never blocked."
           lead="Every desk problem is a skip, logged as DeskSkipped with a reason. With no desk left, the pool fills the whole swap. The pool spot alone can be pushed inside one transaction; the off-chain CRE reference can't."
@@ -129,16 +140,25 @@ export default function HowPage() {
       </section>
 
       <section className="flex flex-col gap-6">
-        <SectionHeading eyebrow="Under the hood" title="Each partner, in the code" lead="Links open the exact lines on GitHub." />
+        <SectionHeading index="03" eyebrow="Under the hood" title="Each partner, in the code" lead="Links open the exact lines on GitHub." />
         <div className="grid gap-4 md:grid-cols-3">
           {partners.map((p) => (
             <InfoCard key={p.title} tag={p.tag} title={p.title} tone="solution">
-              <ul className="space-y-2">
+              <ul className="-mx-1 divide-y divide-dashed divide-black/10">
                 {p.points.map(([label, href]) => (
                   <li key={label}>
-                    <ExternalLink href={href} className="text-[13px]">
-                      {label}
-                    </ExternalLink>
+                    <a
+                      href={href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group flex items-start justify-between gap-3 rounded-md px-1 py-2 transition-colors hover:bg-white"
+                    >
+                      <span className="min-w-0">
+                        <span className="block text-[13px] text-[#18181B] group-hover:text-[#0066FA]">{label}</span>
+                        <span className="mt-0.5 block font-mono text-[11px] text-[#5D5D66]">{codeRef(href)}</span>
+                      </span>
+                      <ArrowUpRight className="mt-0.5 size-3.5 shrink-0 text-[#5D5D66] group-hover:text-[#0066FA]" aria-hidden />
+                    </a>
                   </li>
                 ))}
               </ul>
@@ -161,9 +181,9 @@ export default function HowPage() {
         </InfoCard>
         <InfoCard title="Try it">
           <p>
-            The <Link href="/live" className="text-[#0066FA] underline-offset-2 hover:underline">live page</Link> reads the Unichain Sepolia
+            The <Link href="/live" className="text-[#0066FA] underline decoration-current/35 underline-offset-2 hover:decoration-current">live page</Link> reads the Unichain Sepolia
             deployment: maker balances, the price guard, the last fill. With a little Sepolia ETH you can mint test tokens and run an overflow swap
-            yourself, or <Link href="/desk" className="text-[#0066FA] underline-offset-2 hover:underline">ship your own desk</Link>.
+            yourself, or <Link href="/desk" className="text-[#0066FA] underline decoration-current/35 underline-offset-2 hover:decoration-current">ship your own desk</Link>.
           </p>
           <p className="mt-3">
             Every transaction from the live run: <ExternalLink href={repoFile("docs/DEPLOYMENTS.md")}>docs/DEPLOYMENTS.md</ExternalLink>.

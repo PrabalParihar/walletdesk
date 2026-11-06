@@ -2,7 +2,7 @@
 
 import { useId, useState } from "react";
 import { formatUnits, parseUnits } from "viem";
-import { useAccount, useChainId, usePublicClient, useSwitchChain, useWriteContract } from "wagmi";
+import { useAccount, useChainId, useConnect, usePublicClient, useSwitchChain, useWriteContract } from "wagmi";
 
 import { Notice } from "@/components/notice";
 import { Badge } from "@/components/ui/badge";
@@ -47,6 +47,8 @@ export default function DeskPage() {
   const { switchChainAsync } = useSwitchChain();
   const client = usePublicClient();
   const { writeContractAsync } = useWriteContract();
+  const { connect, connectors, isPending: connecting, error: connectError } = useConnect();
+  const injected = connectors[0];
   const [form, setForm] = useState(defaults);
   const tx = useTxSteps();
   const [error, setError] = useState<string | null>(null);
@@ -260,9 +262,22 @@ export default function DeskPage() {
           <TxSteps steps={tx.steps} explorer={state.status === "ready" ? state.deployment.explorer : undefined} />
           {error ? <Notice tone="error">{error}</Notice> : null}
           <div className="flex flex-wrap gap-2">
-            <Button type="button" onClick={() => void ship()} disabled={busy || !isConnected || state.status !== "ready"}>
-              {busy ? "Working" : isConnected ? "Approve and ship" : "Connect a wallet"}
-            </Button>
+            {isConnected ? (
+              <Button type="button" onClick={() => void ship()} disabled={busy || state.status !== "ready"}>
+                {busy ? "Shipping…" : "Approve and ship"}
+              </Button>
+            ) : (
+              // A disabled "Connect" button looks clickable and does nothing; this one connects.
+              <Button type="button" variant="outline" disabled={!injected || connecting} onClick={() => injected && connect({ connector: injected })}>
+                {injected ? "Connect a wallet to ship" : "No browser wallet found"}
+              </Button>
+            )}
+            {!isConnected && connectError ? (
+              <Notice tone="error">
+                Could not connect a wallet ({connectError.message.split(".")[0]}). Install a browser wallet on Unichain Sepolia, or run the local
+                demo with ./script/demo.sh.
+              </Notice>
+            ) : null}
           </div>
         </CardContent>
       </Card>
