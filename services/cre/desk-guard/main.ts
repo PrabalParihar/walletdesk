@@ -59,9 +59,14 @@ import {
 const hexBytes = (n: number) => z.string().regex(new RegExp(`^0x[0-9a-fA-F]{${n * 2}}$`))
 const decimalString = z.string().regex(/^\d+(\.\d+)?$/)
 
+// No z.string().url(): zod implements it with the global URL constructor, which the CRE WASM engine does not
+// provide, so every URL failed config validation there (Bun has URL, so unit tests passed). A plain regex
+// needs no runtime API. The HTTP capability fetches https only.
+const httpsUrl = z.string().regex(/^https:\/\/[^\s/?#]+[^\s]*$/, "must be an https URL")
+
 const sourceSchema = z.object({
   name: z.string().min(1),
-  url: z.string().url(),
+  url: httpsUrl,
   // Which parser to use for the response body. See price.ts.
   format: z.enum(["coinbase-spot", "kraken-ticker"]),
   // true when the API quotes token0 per token1 and must be inverted to token1 per token0.
