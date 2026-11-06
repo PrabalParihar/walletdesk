@@ -21,7 +21,7 @@ Powered by SwapVM — © Degensoft Ltd 2025 · Powered by Aqua — © Degensoft 
 | `DeployUnichainMainnet` rehearsed on the fork | Deploys against the live contracts; refuses without `CONFIRM_MAINNET=true` |
 | Keeper on the fork | Indexes fills (Aqua `Pulled` / `Pushed`) and skip reasons; posts a live USDT/USD reference (median of Coinbase and Kraken) |
 | Chainlink CRE workflow | `cre workflow build`, `tsc` and 16 SDK tests pass. `cre workflow simulate` needs a CRE login: see `docs/CRE.md` |
-| Web | `npm run lint` and `npm run build` pass |
+| Web | `npm run lint` and `npm run build` pass. Playwright drove the real UI on the fork: a swap through Uniswap's PoolSwapTest filled from the desk, a maker shipped and registered a desk, and the maker claimed the USDC rebate, with no console errors |
 
 Worked numbers (equal shelves, 0.99–1.01 band, 30 bps): 5 in with a pool cap of 1 pulls `3.988` of the output token
 from the maker and pushes `4` of the input back. The pool fills the other 1.
@@ -99,8 +99,9 @@ It refuses any RPC that is not loopback and does not print private keys.
 Then open http://127.0.0.1:43127/live. Keeper: http://127.0.0.1:8787/health (also `/fills`, `/skips`,
 `/reference`). Beat-by-beat script: `docs/WALKTHROUGH.md`.
 
-To click Approve, Ship, Run overflow, or Claim, import the Anvil maker and taker the script prints. Their keys are
-in the Anvil log the script names. They are Foundry's public development accounts; never use them on a public network.
+To click Approve, Ship, Run overflow, or Claim, use the **Demo maker** / **Demo taker** buttons in the header. On the
+fork they connect Anvil's unlocked dev accounts through the RPC, so no key reaches the browser. A browser wallet
+works too. These are Foundry's public development accounts; never use them on a public network.
 
 ## Deploy
 
