@@ -41,6 +41,10 @@ echo
 if [ "$STATUS" -eq 0 ]; then
   echo "Simulation passed. Output appended to services/cre/desk-guard/SIMULATION.md. Commit it:"
 else
-  echo "Simulation exited with $STATUS. The output is in SIMULATION.md; send it to Claude. To commit anyway:"
+  echo "Simulation exited with $STATUS. The output is in SIMULATION.md; send it to Claude. Do not commit a failed run."
+  echo "To discard it: git checkout services/cre/desk-guard/SIMULATION.md"
+  exit "$STATUS"
 fi
 echo "  git add services/cre/desk-guard/SIMULATION.md && git commit -m 'docs(cre): desk-guard simulation on Unichain Sepolia' && git push"
+# Pass the simulator's status through, so callers that only check the exit code see a failure as a failure.
+exit "$STATUS"
