@@ -20,7 +20,7 @@ Done and verified:
 
 | # | Step | Who | Status |
 | --- | --- | --- | --- |
-| 1 | Live deploy on Unichain mainnet: deploy, reference, ship, register, two overflow swaps | Claude, burner key funded by the team | Runs automatically once the burner `0xdC8415C8A712cDdD6Bf503d45b54DB29A1a4e759` holds ≥ 0.0005 ETH (full run costs ≈ 0.0001 ETH). Record: `docs/DEPLOYMENTS.md` |
+| 1 | Live deploy on Unichain mainnet | Claude, burner key funded by the team | **Optional, not done** (burner `0xdC8415C8A712cDdD6Bf503d45b54DB29A1a4e759` has no mainnet ETH). Unichain Sepolia already carries the live proof (step 2) |
 | 2 | Same on Unichain Sepolia (self-deployed Aqua), then hand the feed to the CRE mock forwarder | Claude, burner funded with Sepolia ETH | **Done.** 31 verified transactions in `docs/DEPLOYMENTS.md` |
 | 3 | `cre workflow simulate` (Chainlink requires a successful run) | You, on your Mac (your `cre login` lives there) | **Done.** Passed against the live Sepolia feed; committed from the team machine (`21869ed`). Output in `services/cre/desk-guard/SIMULATION.md` |
 | 4 | Cursor prompts | Claude | Done as a labelled reconstruction: `docs/prompts/01-cursor-v1.md` (the session was not exported) |
@@ -99,8 +99,11 @@ price that a Chainlink CRE workflow writes on chain from Coinbase and Kraken, so
 picked off. A desk can never revert a swap: unfunded wallets, failed fills and stale references fall back to the pool.
 
 **How it's made.** Foundry, Uniswap v4 (OpenZeppelin `BaseHook`), 1inch Aqua + SwapVM v1.0.2 (redeployed with our
-opcode), Chainlink CRE TypeScript SDK, Next.js + wagmi, a viem keeper. 38 local tests plus the same hook suite on a
-Unichain mainnet fork against the live PoolManager and Aqua.
+opcode), Chainlink CRE TypeScript SDK, Next.js + wagmi, a viem keeper. 38 local tests plus the same hook suite (21
+tests) on a Unichain mainnet fork against the live PoolManager and Aqua. Live on Unichain Sepolia with real overflow
+fills (docs/DEPLOYMENTS.md), and the CRE workflow's simulation passed against the live feed.
+
+**Links.** Repo README, judging guide `docs/JUDGING.md`, demo video: TODO (team).
 
 **Partner prizes.** 1inch (Build an Aqua App), Uniswap Foundation (Build with Uniswap), Chainlink (Best workflow with CRE).
 
