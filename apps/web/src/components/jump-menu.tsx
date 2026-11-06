@@ -32,7 +32,7 @@ const items: Item[] = [
   { group: "Docs", label: "Source code", hint: "GitHub", href: REPO_URL, external: true },
 ];
 
-export function JumpMenu() {
+export function JumpMenu({ wide = false }: { wide?: boolean }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -90,28 +90,32 @@ export function JumpMenu() {
       <Dialog.Trigger asChild>
         <button
           type="button"
-          className="inline-flex h-8 items-center gap-2 rounded-lg border border-black/10 px-2 text-[12px] text-[#5D5D66] transition-colors hover:bg-black/[0.03] hover:text-[#18181B] md:pr-1.5 md:pl-2.5"
+          className={cn(
+            "inline-flex h-8 items-center gap-2 rounded-lg border border-line-2 px-2 text-[12px] text-muted-ink transition-colors hover:bg-hover hover:text-ink md:pr-1.5 md:pl-2.5",
+            // Designeer-style search pill on wider screens
+            wide && "md:h-9 md:w-[340px] md:rounded-[10px] md:bg-raised md:px-3 md:text-[13px]",
+          )}
           aria-label="Jump to a page, contract, transaction or doc"
         >
           <Search className="size-3.5" aria-hidden />
-          <span className="hidden md:inline">Jump to</span>
+          <span className={cn("hidden md:inline", wide && "md:flex-1 md:text-left")}>{wide ? "Search pages, contracts, txs" : "Jump to"}</span>
           <span className="hidden items-center gap-0.5 md:inline-flex" aria-hidden>
-            <kbd className="rounded border border-black/10 bg-[#F2F2F3] px-1 font-mono text-[10px] leading-4">{kbd}</kbd>
-            <kbd className="rounded border border-black/10 bg-[#F2F2F3] px-1 font-mono text-[10px] leading-4">K</kbd>
+            <kbd className="rounded border border-line-2 bg-sunken px-1 font-mono text-[10px] leading-4">{kbd}</kbd>
+            <kbd className="rounded border border-line-2 bg-sunken px-1 font-mono text-[10px] leading-4">K</kbd>
           </span>
         </button>
       </Dialog.Trigger>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-40 bg-white/60 backdrop-blur-sm data-[state=open]:animate-in data-[state=open]:fade-in-0" />
+        <Dialog.Overlay className="fixed inset-0 z-40 bg-surface/60 backdrop-blur-sm data-[state=open]:animate-in data-[state=open]:fade-in-0" />
         <Dialog.Content
-          className="fixed top-[12vh] left-1/2 z-50 w-[min(36rem,calc(100vw-2rem))] -translate-x-1/2 overflow-hidden rounded-[14px] border border-black/10 bg-white shadow-[0_24px_60px_rgba(0,0,0,0.14)] outline-none"
+          className="fixed top-[12vh] left-1/2 z-50 w-[min(36rem,calc(100vw-2rem))] -translate-x-1/2 overflow-hidden rounded-[14px] border border-line-2 bg-surface shadow-[0_24px_60px_rgba(0,0,0,0.14)] outline-none"
           aria-describedby={undefined}
         >
           <VisuallyHidden.Root>
             <Dialog.Title>Jump to</Dialog.Title>
           </VisuallyHidden.Root>
-          <div className="flex items-center gap-2 border-b border-dashed border-black/12 px-4">
-            <Search className="size-4 text-[#5D5D66]" aria-hidden />
+          <div className="flex items-center gap-2 border-b border-dashed border-line-2 px-4">
+            <Search className="size-4 text-muted-ink" aria-hidden />
             <input
               autoFocus
               value={query}
@@ -132,38 +136,38 @@ export function JumpMenu() {
                 }
               }}
               placeholder="Pages, contracts, transactions, docs"
-              className="h-12 flex-1 bg-transparent text-[14px] outline-none placeholder:text-[#71717A]"
+              className="h-12 flex-1 bg-transparent text-[14px] outline-none placeholder:text-faint-strong"
               role="combobox"
               aria-expanded
               aria-controls="jump-results"
               aria-activedescendant={results[active] ? `jump-${active}` : undefined}
               aria-label="Search"
             />
-            <kbd className="rounded border border-black/10 bg-[#F2F2F3] px-1.5 font-mono text-[10px] leading-5 text-[#5D5D66]">Esc</kbd>
+            <kbd className="rounded border border-line-2 bg-sunken px-1.5 font-mono text-[10px] leading-5 text-muted-ink">Esc</kbd>
           </div>
           <ul id="jump-results" ref={listRef} role="listbox" className="max-h-[52vh] overflow-y-auto p-2">
-            {results.length === 0 ? <li className="px-3 py-6 text-center text-[13px] text-[#5D5D66]">Nothing matches.</li> : null}
+            {results.length === 0 ? <li className="px-3 py-6 text-center text-[13px] text-muted-ink">Nothing matches.</li> : null}
             {results.map((item, index) => {
               const showGroup = index === 0 || results[index - 1].group !== item.group;
               const row = (
                 <>
                   <span className="min-w-0 flex-1 truncate">{item.label}</span>
-                  <span className="shrink-0 font-mono text-[11px] text-[#5D5D66]">{item.hint}</span>
+                  <span className="shrink-0 font-mono text-[11px] text-muted-ink">{item.hint}</span>
                   {item.external ? (
-                    <ArrowUpRight className="size-3.5 shrink-0 text-[#5D5D66]" aria-hidden />
+                    <ArrowUpRight className="size-3.5 shrink-0 text-muted-ink" aria-hidden />
                   ) : (
-                    <CornerDownLeft className={cn("size-3.5 shrink-0 text-[#5D5D66]", index !== active && "opacity-0")} aria-hidden />
+                    <CornerDownLeft className={cn("size-3.5 shrink-0 text-muted-ink", index !== active && "opacity-0")} aria-hidden />
                   )}
                 </>
               );
               const cls = cn(
-                "flex cursor-pointer items-center gap-3 rounded-[8px] px-3 py-2 text-[13px] text-[#18181B]",
-                index === active && "bg-[#F2F2F3]",
+                "flex cursor-pointer items-center gap-3 rounded-[8px] px-3 py-2 text-[13px] text-ink",
+                index === active && "bg-sunken",
               );
               return (
                 <li key={item.label} role="presentation">
                   {showGroup ? (
-                    <p className="px-3 pt-3 pb-1 font-mono text-[10px] tracking-wider text-[#5D5D66] uppercase first:pt-1">{item.group}</p>
+                    <p className="px-3 pt-3 pb-1 font-mono text-[10px] tracking-wider text-muted-ink uppercase first:pt-1">{item.group}</p>
                   ) : null}
                   <div
                     id={`jump-${index}`}

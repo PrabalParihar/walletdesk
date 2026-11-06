@@ -25,17 +25,22 @@ export const sans = "Inter, system-ui, sans-serif";
 export const mono = '"Geist Mono", ui-monospace, monospace';
 
 export const c = {
-  ink: "#18181B",
-  body: "#4A4A52",
-  muted: "#5D5D66",
-  faint: "#A1A1AA",
-  paper: "#FFFFFF",
-  canvas: "#EFEFF1",
-  line: "rgba(0,0,0,0.08)",
-  pool: "#D6006F", // Uniswap pink, darkened for white text (same token as the site)
+  // Dark, like the site's default theme (Designeer-style).
+  ink: "#F4F4F5",
+  body: "#C9C9CF",
+  muted: "#A1A1AA",
+  faint: "#8B8B94",
+  paper: "#0B0B0C",
+  raised: "#141416",
+  sunken: "#1C1C1F",
+  canvas: "#060607",
+  line: "rgba(255,255,255,0.08)",
+  hatch: "rgba(255,255,255,0.07)",
+  link: "#7CB4FF",
+  pool: "#D6006F", // Uniswap pink, white text 5.1:1 (same token as the site)
   desk: "#0066FA", // maker wallet via 1inch Aqua
   cre: "#375BD2", // Chainlink
-  ok: "#047857",
+  ok: "#34D399",
 };
 
 export const FPS = 30;

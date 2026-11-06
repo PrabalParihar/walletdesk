@@ -113,7 +113,7 @@ export default function FeesPage() {
             <CardTitle>Maker rebates in USDC</CardTitle>
             <Badge variant="outline">USDC, 6 decimals on the ERC-20 interface</Badge>
           </div>
-          <p className="max-w-2xl text-[13px] leading-relaxed text-[#5D5D66]">
+          <p className="max-w-2xl text-[13px] leading-relaxed text-muted-ink">
             The maker&apos;s spread on each fill stays in the maker wallet as the output token. On top of that, a protocol-funded rebate
             program pays USDC per attested fill into FeeShareTreasury. Circle CCTP V2 can carry that USDC from Unichain Sepolia (domain 10)
             to Arc testnet (domain 26). The local fork cannot get an Iris attestation, so here the keeper credits the treasury directly and
@@ -126,11 +126,11 @@ export default function FeesPage() {
           <Stat label="Settlement" value={deployment ? `${deployment.settlement}. ${keeper || ""}` : "Not deployed"} />
         </CardContent>
       </Card>
-      <Card className="bg-[#F2F2F3] shadow-none">
+      <Card className="bg-sunken shadow-none">
         <CardHeader>
           <CardTitle>Claim</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3 text-[13px] text-[#5D5D66]">
+        <CardContent className="space-y-3 text-[13px] text-muted-ink">
           {state.status === "missing" ? (
             <Notice tone="info">The fork treasury appears after ./script/demo.sh. Arc Studio steps are in arc/README.md. There is no Studio URL until you create the project.</Notice>
           ) : null}
@@ -156,8 +156,8 @@ export default function FeesPage() {
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-[10px] border border-black/8 bg-white p-3">
-      <p className="text-[12px] text-[#5D5D66]">{label}</p>
+    <div className="rounded-[10px] border border-line bg-surface p-3">
+      <p className="text-[12px] text-muted-ink">{label}</p>
       <p className="mt-1 text-[14px] break-words">{value}</p>
     </div>
   );

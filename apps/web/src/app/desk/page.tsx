@@ -214,9 +214,9 @@ export default function DeskPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <section className="rounded-[14px] border border-black/8 bg-[#FAFAFB] p-5 md:p-6">
+      <section className="rounded-[14px] border border-line bg-raised p-5 md:p-6">
         <h1 className="text-2xl font-semibold tracking-tight md:text-[28px]">Make a desk</h1>
-        <p className="mt-2 max-w-3xl text-[14px] leading-relaxed text-[#4A4A52]">
+        <p className="mt-2 max-w-3xl text-[14px] leading-relaxed text-body">
           A desk is a quote that lives in your wallet. You pick a price band and a fee, ship it as a DeskBand strategy on 1inch Aqua, and
           register it on the hook. Your tokens never leave the wallet until a swap fills against your desk.
         </p>
@@ -230,7 +230,7 @@ export default function DeskPage() {
       <Card className="shadow-[0_8px_30px_rgba(0,0,0,0.04)]">
         <CardHeader>
           <CardTitle>Ship a desk</CardTitle>
-          <p className="text-[13px] text-[#5D5D66]">
+          <p className="text-[13px] text-muted-ink">
             Approve the Aqua registry, ship a DeskBand strategy, and register it on OverflowHook. Shipping does not move tokens. Prices are{" "}
             {state.status === "ready" ? `${state.deployment.symbol1} per ${state.deployment.symbol0}` : "token1 per token0"}. The desk is
             skipped whenever its quote is further than the max deviation from the pool spot or the Chainlink CRE reference.
@@ -282,10 +282,10 @@ export default function DeskPage() {
         </CardContent>
       </Card>
       <div className="grid content-start gap-6">
-      <Card className="border-[#0066FA]/15 bg-[#F5F9FF] shadow-none">
+      <Card className="border-desk/15 bg-solution shadow-none">
         <CardHeader>
           <CardTitle>Quote preview</CardTitle>
-          <p className="text-[13px] text-[#5D5D66]">
+          <p className="text-[13px] text-muted-ink">
             What this desk would pay for a {PREVIEW_RESIDUAL} {sym0} overflow, with equal shelves. Same math as the on-chain DeskBand opcode.
           </p>
         </CardHeader>
@@ -297,17 +297,17 @@ export default function DeskPage() {
               </p>
               <Row label="Band price now" value={`${formatPriceX18(preview.priceX18, d0, d1)} ${sym1} per ${sym0}`} />
               <Row label="Your spread (kept in wallet)" value={`${formatPriceX18((preview.feeOut * 10n ** 18n) / 10n ** BigInt(d1), 18, 18, 6)} ${sym1}`} />
-              <p className="text-[12px] leading-relaxed text-[#5D5D66]">
+              <p className="text-[12px] leading-relaxed text-muted-ink">
                 As your {sym1} shelf drains, the price slides toward the low end of the band, so the quote gets worse for takers on the side
                 you are running out of.
               </p>
             </>
           ) : (
-            <p className="text-[#5D5D66]">{preview && "error" in preview ? preview.error : "Set a shelf amount and a valid band."}</p>
+            <p className="text-muted-ink">{preview && "error" in preview ? preview.error : "Set a shelf amount and a valid band."}</p>
           )}
         </CardContent>
       </Card>
-      <Card className="bg-[#F2F2F3] shadow-none">
+      <Card className="bg-sunken shadow-none">
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>Program</CardTitle>
@@ -318,13 +318,13 @@ export default function DeskPage() {
           <Row label="Wallet movement" value="None on ship" />
           <Row label="Registry" value={state.status === "ready" ? state.deployment.aqua : "Aqua"} />
           <div>
-            <p className="flex items-center gap-1 text-[#5D5D66]">
+            <p className="flex items-center gap-1 text-muted-ink">
               Strategy bytes {result ? <CopyButton value={result.strategy} label="strategy bytes" /> : null}
             </p>
             <p className="mt-1 break-all font-mono text-xs">{result?.strategy ?? "Ship to write the order Aqua stores."}</p>
           </div>
           <div>
-            <p className="text-[#5D5D66]">Register transaction</p>
+            <p className="text-muted-ink">Register transaction</p>
             <p className="mt-1 break-all font-mono text-xs">
               {result ? (
                 txUrl(state.status === "ready" ? state.deployment.explorer : undefined, result.hash) ? (
@@ -351,7 +351,7 @@ function Field({ label, value, onChange }: { label: string; value: string; onCha
   const id = useId();
   return (
     <div className="grid gap-1.5">
-      <Label htmlFor={id} className="text-[12px] text-[#5D5D66]">
+      <Label htmlFor={id} className="text-[12px] text-muted-ink">
         {label}
       </Label>
       <Input id={id} inputMode="decimal" autoComplete="off" value={value} onChange={(event) => onChange(event.target.value)} />
@@ -362,7 +362,7 @@ function Field({ label, value, onChange }: { label: string; value: string; onCha
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-baseline justify-between gap-4">
-      <span className="text-[#5D5D66]">{label}</span>
+      <span className="text-muted-ink">{label}</span>
       <span className="max-w-[16rem] truncate text-right font-mono text-xs">{value}</span>
     </div>
   );

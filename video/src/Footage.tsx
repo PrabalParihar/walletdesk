@@ -108,14 +108,14 @@ export function Footage({
           borderRadius: 14,
           overflow: "hidden",
           background: c.paper,
-          boxShadow: "0 30px 80px rgba(0,0,0,0.14), 0 0 0 1px rgba(0,0,0,0.06)",
+          boxShadow: "0 30px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.08)",
         }}
       >
-        <div style={{ height: BAR_H, display: "flex", alignItems: "center", gap: 8, padding: "0 16px", borderBottom: `1px solid ${c.line}`, background: "#FAFAFB" }}>
+        <div style={{ height: BAR_H, display: "flex", alignItems: "center", gap: 8, padding: "0 16px", borderBottom: `1px solid ${c.line}`, background: c.raised }}>
           {["#FF5F57", "#FEBC2E", "#28C840"].map((col) => (
             <span key={col} style={{ width: 12, height: 12, borderRadius: 6, background: col }} />
           ))}
-          <span style={{ marginLeft: 18, padding: "4px 14px", borderRadius: 8, background: "#EFEFF1", fontFamily: mono, fontSize: 15, color: c.muted }}>{url}</span>
+          <span style={{ marginLeft: 18, padding: "4px 14px", borderRadius: 8, background: c.sunken, fontFamily: mono, fontSize: 15, color: c.muted }}>{url}</span>
         </div>
         <div style={{ position: "relative", width: WINDOW_W, height: m.height * scale, overflow: "hidden" }}>
           <div style={{ position: "absolute", left: 0, top: 0, width: WINDOW_W, height: m.height * scale, transformOrigin: "0 0", transform: `translate(${tx}px, ${ty}px) scale(${zs})` }}>
@@ -126,8 +126,8 @@ export function Footage({
       </div>
       {current ? (
         <div style={{ position: "absolute", left: 0, right: 0, top: top + winH + 26, display: "flex", justifyContent: "center", opacity: capIn, transform: `translateY(${(1 - capIn) * 10}px)` }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "14px 26px", borderRadius: 14, background: c.ink, color: "#fff", fontSize: 30, fontWeight: 600, maxWidth: 1700 }}>
-            {current.tag ? <span style={{ fontFamily: mono, fontSize: 18, fontWeight: 500, letterSpacing: 1.5, color: "#7CB4FF", textTransform: "uppercase" }}>{current.tag}</span> : null}
+          <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "14px 26px", borderRadius: 14, background: c.ink, color: c.paper, fontSize: 30, fontWeight: 600, maxWidth: 1700 }}>
+            {current.tag ? <span style={{ fontFamily: mono, fontSize: 18, fontWeight: 500, letterSpacing: 1.5, color: c.desk, textTransform: "uppercase" }}>{current.tag}</span> : null}
             <span>{current.text}</span>
           </div>
         </div>
@@ -191,9 +191,9 @@ export function Rails() {
     top: 0,
     bottom: 0,
     width: 18,
-    borderLeft: "1px solid rgba(0,0,0,0.07)",
-    borderRight: "1px solid rgba(0,0,0,0.07)",
-    backgroundImage: "repeating-linear-gradient(-45deg, rgba(0,0,0,0.07) 0 1px, transparent 1px 7px)",
+    borderLeft: `1px solid ${c.hatch}`,
+    borderRight: `1px solid ${c.hatch}`,
+    backgroundImage: `repeating-linear-gradient(-45deg, ${c.hatch} 0 1px, transparent 1px 7px)`,
   };
   return (
     <>

@@ -18,7 +18,7 @@ export function ExternalLink({
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className={cn("inline-flex items-center gap-0.5 text-[#0066FA] underline decoration-current/35 underline-offset-2 hover:decoration-current", className)}
+      className={cn("inline-flex items-center gap-0.5 text-link underline decoration-current/35 underline-offset-2 hover:decoration-current", className)}
     >
       {children}
       <ArrowUpRight className="size-3.5 shrink-0" aria-hidden />
@@ -29,8 +29,8 @@ export function ExternalLink({
 /** Section label: a two-digit index and a monospace caption, so a long page reads as numbered parts. */
 export function Eyebrow({ children, index, className }: { children: React.ReactNode; index?: string; className?: string }) {
   return (
-    <p className={cn("flex items-center gap-2 font-mono text-[12px] tracking-wider text-[#5D5D66] uppercase", className)}>
-      {index ? <span className="text-[#0066FA]">{index}</span> : null}
+    <p className={cn("flex items-center gap-2 font-mono text-[12px] tracking-wider text-muted-ink uppercase", className)}>
+      {index ? <span className="text-link">{index}</span> : null}
       <span>{children}</span>
     </p>
   );
@@ -59,7 +59,7 @@ export function SectionHeading({
       <Heading id={id} className="mt-2 text-2xl font-semibold tracking-tight text-balance md:text-[28px]">
         {title}
       </Heading>
-      {lead ? <p className="mt-3 text-[15px] leading-relaxed text-[#5D5D66]">{lead}</p> : null}
+      {lead ? <p className="mt-3 text-[15px] leading-relaxed text-muted-ink">{lead}</p> : null}
     </div>
   );
 }
@@ -83,9 +83,9 @@ export function InfoCard({
     <article
       className={cn(
         "rounded-[12px] border p-5",
-        tone === "problem" && "border-[#E11D48]/15 bg-[#FFF7F8]",
-        tone === "solution" && "border-[#0066FA]/15 bg-[#F5F9FF]",
-        tone === "plain" && "border-black/8 bg-white",
+        tone === "problem" && "border-[#E11D48]/15 bg-problem-soft",
+        tone === "solution" && "border-desk/15 bg-solution",
+        tone === "plain" && "border-line bg-surface",
         className,
       )}
     >
@@ -93,7 +93,7 @@ export function InfoCard({
         <span
           className={cn(
             "mb-3 flex size-8 items-center justify-center rounded-[8px]",
-            tone === "problem" ? "bg-[#E11D48]/10 text-[#BE123C]" : "bg-[#0066FA]/10 text-[#0050C8]",
+            tone === "problem" ? "bg-[#E11D48]/10 text-problem" : "bg-desk/10 text-desk-ink",
           )}
           aria-hidden
         >
@@ -104,14 +104,14 @@ export function InfoCard({
         <p
           className={cn(
             "mb-2 font-mono text-[11px] tracking-wider uppercase",
-            tone === "problem" ? "text-[#BE123C]" : "text-[#0066FA]",
+            tone === "problem" ? "text-problem" : "text-link",
           )}
         >
           {tag}
         </p>
       ) : null}
       <h3 className="text-[16px] font-semibold text-balance">{title}</h3>
-      <div className="mt-2 text-[14px] leading-relaxed text-pretty text-[#4A4A52]">{children}</div>
+      <div className="mt-2 text-[14px] leading-relaxed text-pretty text-body">{children}</div>
     </article>
   );
 }
@@ -119,12 +119,12 @@ export function InfoCard({
 export function StatLink({ value, label, href, internal }: { value: string; label: string; href?: string; internal?: boolean }) {
   const body = (
     <>
-      <p className="text-[26px] font-semibold tracking-tight text-[#18181B] tabular-nums">{value}</p>
-      <p className="mt-1 text-[13px] leading-snug text-[#5D5D66]">{label}</p>
-      {href ? <ArrowUpRight className="absolute top-4 right-4 size-4 text-[#0066FA]" aria-hidden /> : null}
+      <p className="text-[26px] font-semibold tracking-tight text-ink tabular-nums">{value}</p>
+      <p className="mt-1 text-[13px] leading-snug text-muted-ink">{label}</p>
+      {href ? <ArrowUpRight className="absolute top-4 right-4 size-4 text-link" aria-hidden /> : null}
     </>
   );
-  const cls = "relative block rounded-[12px] border border-black/8 bg-white p-4 transition-colors hover:border-[#0066FA]/40";
+  const cls = "relative block rounded-[12px] border border-line bg-surface p-4 transition-colors hover:border-desk/40";
   if (!href) return <div className={cls}>{body}</div>;
   if (internal) {
     return (
@@ -168,18 +168,18 @@ export function SplitBar({
         >
           {poolPart > 0 ? `${fmt(poolPart)} ${symbol}` : null}
         </div>
-        <div className="flex flex-1 items-center justify-center bg-[#0066FA] px-2 text-white">
+        <div className="flex flex-1 items-center justify-center bg-desk px-2 text-white">
           {deskPart > 0 ? `${fmt(deskPart)} ${symbol}` : "no overflow"}
         </div>
       </div>
-      <figcaption className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[12px] text-[#5D5D66]">
+      <figcaption className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[12px] text-muted-ink">
         <span className="flex items-center gap-1.5">
           <span className="inline-block size-2.5 rounded-sm bg-[var(--pool)]" aria-hidden /> Uniswap v4 pool, up to its cap
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="inline-block size-2.5 rounded-sm bg-[#0066FA]" aria-hidden /> Maker wallet via 1inch Aqua
+          <span className="inline-block size-2.5 rounded-sm bg-desk" aria-hidden /> Maker wallet via 1inch Aqua
         </span>
-        {caption ? <span className="w-full text-[12px] text-[#5D5D66]">{caption}</span> : null}
+        {caption ? <span className="w-full text-[12px] text-muted-ink">{caption}</span> : null}
       </figcaption>
     </figure>
   );
