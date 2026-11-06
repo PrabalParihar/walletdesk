@@ -1,13 +1,18 @@
 #!/usr/bin/env bash
 # One command for the Chainlink CRE proof: simulates WalletDesk's desk-guard workflow against the live
 # DeskPriceFeed on Unichain Sepolia (addresses in docs/DEPLOYMENTS.md, config already committed) and appends the
-# real simulator output to desk-guard/SIMULATION.md. Needs the CRE CLI with `cre login` done, and Bun.
+# real simulator output to desk-guard/SIMULATION.md. Needs the CRE CLI with `cre login` done, and Bun 1.4 or newer.
 # Run from anywhere:  ./services/cre/simulate-sepolia.sh
 set -euo pipefail
 cd "$(dirname "$0")"
 
 command -v cre >/dev/null || { echo "CRE CLI not found. Install it, then run: cre login"; exit 1; }
 command -v bun >/dev/null || { echo "Bun not found. Install it: brew install oven-sh/bun/bun"; exit 1; }
+# desk-guard/bun.lock is lockfile format 2, which Bun 1.4+ reads (CI uses 1.4.4). Older Bun fails on the frozen install.
+BUN_VERSION="$(bun --version)"
+case "$BUN_VERSION" in
+  0.*|1.[0-3].*) echo "Bun $BUN_VERSION is too old for desk-guard/bun.lock. Run: bun upgrade (or brew upgrade oven-sh/bun/bun), then rerun."; exit 1 ;;
+esac
 cre whoami >/dev/null 2>&1 || { echo "Not logged in to CRE. Run: cre login"; exit 1; }
 
 (cd desk-guard && bun install --frozen-lockfile >/dev/null)
