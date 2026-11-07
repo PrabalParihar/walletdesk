@@ -20,9 +20,10 @@ const mono = Geist_Mono({
 const description =
   "A Uniswap v4 hook that fills the overflow of large swaps from market makers' wallets through 1inch Aqua, at a price checked by Chainlink CRE. Live on Unichain Sepolia.";
 
-/** Absolute base for the Open Graph image. Set NEXT_PUBLIC_SITE_URL when hosting; Vercel's own URL is used otherwise. */
+/** Absolute base for the Open Graph image: NEXT_PUBLIC_SITE_URL if set, else the Railway or Vercel public domain. */
 const siteUrl =
   process.env.NEXT_PUBLIC_SITE_URL ??
+  (process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : undefined) ??
   (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "http://localhost:43127");
 
 export const metadata: Metadata = {
