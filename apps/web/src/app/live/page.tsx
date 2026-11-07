@@ -1,24 +1,20 @@
 "use client";
 
 import { ArrowUpRight } from "lucide-react";
-import { useEffect, useState } from "react";
-import { createPublicClient, formatUnits, http, parseUnits } from "viem";
+import { useState } from "react";
+import { formatUnits, parseUnits } from "viem";
 import { useAccount, useConnect, usePublicClient, useWriteContract } from "wagmi";
 
 import { Notice } from "@/components/notice";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
-  aquaAbi,
   erc20Abi,
-  feedAbi,
-  hookAbi,
   poolKey,
   routerAbi,
   shortError,
   skipReasons,
   stockRouterAbi,
-  type Deployment,
 } from "@/lib/contracts";
 import { CopyButton } from "@/components/copy-button";
 import { MintTestTokens } from "@/components/mint-test-tokens";
@@ -37,42 +33,11 @@ import {
 } from "@/components/live-swap";
 import { formatAmount, formatPriceX18 } from "@/lib/desk";
 import { addressUrl } from "@/lib/live";
+import { humanAge } from "@/lib/live-strip";
 import { useDeployment } from "@/lib/use-deployment";
+import { useLiveState } from "@/lib/use-live-state";
 import { useSwitchNetwork } from "@/lib/use-switch-network";
 
-type Fill = {
-  maker: `0x${string}`;
-  residualIn: bigint;
-  filledOut: bigint;
-  feeOut: bigint;
-  fillId: `0x${string}`;
-};
-
-type KeeperFill = {
-  fillId: string;
-  txHash: string;
-  residualIn: string | null;
-  filledOut: string | null;
-  feeOut: string;
-  transfers: { event: string; token: string; amount: string }[];
-  credited: boolean;
-  creditNote?: string;
-};
-
-type KeeperSkip = { txHash: string; maker: string; reason: number; blockNumber: number };
-
-type Balances = { wallet0: bigint; wallet1: bigint; virtual0: bigint | null; virtual1: bigint | null };
-
-type Guard = {
-  spotX18: bigint;
-  referenceX18: bigint | null;
-  referenceAge: number | null;
-  maxReferenceAge: number;
-  deskCount: bigint;
-  cap: bigint;
-};
-
-const ZERO_HASH = "0x0000000000000000000000000000000000000000000000000000000000000000";
 const MIN_SQRT_PRICE_PLUS_ONE = 4295128740n;
 
 export default function LivePage() {
@@ -85,103 +50,13 @@ export default function LivePage() {
   const injected = connectors[0];
   const [swapSize, setSwapSize] = useState("5");
   const [route, setRoute] = useState<"overflow" | "stock">("overflow");
-  const [fill, setFill] = useState<Fill | null>(null);
-  const [balances, setBalances] = useState<Balances | null>(null);
-  const [guard, setGuard] = useState<Guard | null>(null);
-  const [keeper, setKeeper] = useState<KeeperFill[]>([]);
-  const [skips, setSkips] = useState<KeeperSkip[]>([]);
-  const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [swapError, setSwapError] = useState<string | null>(null);
   const [progress, setProgress] = useState<Progress>(idleProgress);
   const [result, setResult] = useState<SwapResult | null>(null);
 
   const deployment = state.status === "ready" ? state.deployment : null;
-
-  useEffect(() => {
-    if (!deployment) return;
-    let cancelled = false;
-    const client = createPublicClient({ transport: http(deployment.rpcUrl) });
-    async function load(current: Deployment) {
-      setLoading(true);
-      try {
-        const last = await client.readContract({
-          address: current.hook,
-          abi: hookAbi,
-          functionName: "lastFill",
-          args: [current.poolId],
-        });
-        const [maker, , , residualIn, filledOut, feeOut, fillId] = last;
-        const [wallet0, wallet1, spotX18, deskCount, cap, maxReferenceAge] = await Promise.all([
-          client.readContract({ address: current.token0, abi: erc20Abi, functionName: "balanceOf", args: [current.maker] }),
-          client.readContract({ address: current.token1, abi: erc20Abi, functionName: "balanceOf", args: [current.maker] }),
-          client.readContract({ address: current.hook, abi: hookAbi, functionName: "spotPriceX18", args: [current.poolId] }),
-          client.readContract({ address: current.hook, abi: hookAbi, functionName: "deskCount", args: [current.poolId] }),
-          client.readContract({ address: current.hook, abi: hookAbi, functionName: "poolInputCap", args: [current.poolId] }),
-          client.readContract({ address: current.hook, abi: hookAbi, functionName: "maxReferenceAge" }),
-        ]);
-        let virtual: readonly [bigint, bigint] | null = null;
-        if (current.strategyHash !== ZERO_HASH) {
-          try {
-            virtual = await client.readContract({
-              address: current.aqua,
-              abi: aquaAbi,
-              functionName: "safeBalances",
-              args: [current.maker, current.swapVm, current.strategyHash, current.token0, current.token1],
-            });
-          } catch {
-            virtual = null;
-          }
-        }
-        let referenceX18: bigint | null = null;
-        let referenceAge: number | null = null;
-        if (current.priceFeed) {
-          const [price, updatedAt] = await client.readContract({
-            address: current.priceFeed,
-            abi: feedAbi,
-            functionName: "referenceOf",
-            args: [current.poolId],
-          });
-          const block = await client.getBlock();
-          referenceX18 = price === 0n ? null : price;
-          referenceAge = updatedAt === 0n ? null : Number(block.timestamp - updatedAt);
-        }
-        let keeperFills: KeeperFill[] = [];
-        let keeperSkips: KeeperSkip[] = [];
-        if (current.keeperUrl) {
-          try {
-            const [fillsResponse, skipsResponse] = await Promise.all([
-              fetch(`${current.keeperUrl}/fills`),
-              fetch(`${current.keeperUrl}/skips`),
-            ]);
-            if (fillsResponse.ok) keeperFills = ((await fillsResponse.json()) as { fills: KeeperFill[] }).fills;
-            if (skipsResponse.ok) keeperSkips = ((await skipsResponse.json()) as { skips: KeeperSkip[] }).skips;
-          } catch {
-            keeperFills = [];
-          }
-        }
-        if (!cancelled) {
-          setFill(maker === "0x0000000000000000000000000000000000000000" ? null : { maker, residualIn, filledOut, feeOut, fillId });
-          setBalances({ wallet0, wallet1, virtual0: virtual ? virtual[0] : null, virtual1: virtual ? virtual[1] : null });
-          setGuard({ spotX18, referenceX18, referenceAge, maxReferenceAge: Number(maxReferenceAge), deskCount, cap });
-          setKeeper(keeperFills);
-          setSkips(keeperSkips);
-          setError(null);
-        }
-      } catch (caught) {
-        if (!cancelled) setError(shortError(caught));
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-    void load(deployment);
-    const timer = window.setInterval(() => void load(deployment), 8000);
-    return () => {
-      cancelled = true;
-      window.clearInterval(timer);
-    };
-  }, [deployment]);
+  const { fill, balances, guard, keeper, skips, loading, error } = useLiveState(deployment);
 
   async function runSwap() {
     if (!deployment || !address || !walletClient) {
@@ -451,13 +326,6 @@ export default function LivePage() {
       ) : null}
     </div>
   );
-}
-
-function humanAge(seconds: number): string {
-  if (seconds < 120) return `${seconds}s`;
-  if (seconds < 7200) return `${Math.round(seconds / 60)} min`;
-  if (seconds < 172800) return `${Math.round(seconds / 3600)} h`;
-  return `${Math.round(seconds / 86400)} d`;
 }
 
 function BalanceRow({
