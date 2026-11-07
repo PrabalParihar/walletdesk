@@ -22,6 +22,7 @@
   --color-band: var(--wd-band);
   --color-band-link: var(--wd-band-link);
   --color-desk: var(--wd-desk);
+  --color-pool: var(--pool);
   --color-link: var(--wd-link);
   --color-desk-ink: var(--wd-desk-ink);
   --color-problem: var(--wd-problem);
@@ -136,9 +137,9 @@
 
 .dark {
   color-scheme: dark;
-  --background: #121212;
+  --background: #0b0b0c;
   --foreground: #f4f4f5;
-  --card: #1c1c1f;
+  --card: #141416;
   --card-foreground: #f4f4f5;
   --popover: #1c1c1f;
   --popover-foreground: #f4f4f5;
@@ -161,9 +162,9 @@
   --wd-muted: #a1a1aa;
   --wd-faint: #8b8b94;
   --wd-faint-strong: #a1a1aa;
-  --wd-surface: #121212;
-  --wd-raised: #1c1c1f;
-  --wd-sunken: #18181b;
+  --wd-surface: #0b0b0c;
+  --wd-raised: #141416;
+  --wd-sunken: #1c1c1f;
   --wd-band: #141416;
   --wd-band-link: #7cb4ff;
   --wd-desk: #0066fa;
