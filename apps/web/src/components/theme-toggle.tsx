@@ -33,7 +33,7 @@ export function ThemeToggle() {
           // Private mode or blocked storage: the switch still works for this page view.
         }
       }}
-      className="inline-flex size-8 items-center justify-center rounded-lg border border-line-2 text-muted-ink transition-colors hover:bg-hover hover:text-ink"
+      className="wd-spring inline-flex size-8 items-center justify-center rounded-full border border-line-2 text-muted-ink hover:bg-hover hover:text-ink"
       aria-label={dark ? "Switch to light theme" : "Switch to dark theme"}
       title={dark ? "Light theme" : "Dark theme"}
     >

@@ -21,7 +21,7 @@ export function CopyButton({ value, label, className }: { value: string; label: 
         void navigator.clipboard?.writeText(value).then(() => setCopied(true), () => undefined);
       }}
       className={cn(
-        "inline-flex size-6 shrink-0 items-center justify-center rounded-md text-muted-ink transition-colors hover:bg-hover hover:text-ink",
+        "wd-spring inline-flex size-6 shrink-0 items-center justify-center rounded-md text-muted-ink hover:bg-hover hover:text-ink",
         className,
       )}
       aria-label={copied ? `${label} copied` : `Copy ${label}`}

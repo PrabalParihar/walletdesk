@@ -5,7 +5,7 @@ export function Notice({ tone, children }: { tone: "error" | "info" | "ok"; chil
     ok: "border-[#0F9F6E]/30 bg-[#0F9F6E]/8 text-[#047857] dark:text-[#34D399]",
   }[tone];
   return (
-    <p role={tone === "error" ? "alert" : "status"} className={`rounded-[10px] border px-3 py-2 text-[13px] leading-relaxed ${styles}`}>
+    <p role={tone === "error" ? "alert" : "status"} className={`rounded-[10px] border px-3 py-2.5 text-[13px] leading-relaxed ${styles}`}>
       {children}
     </p>
   );

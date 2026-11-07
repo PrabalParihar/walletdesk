@@ -91,9 +91,8 @@ export function JumpMenu({ wide = false }: { wide?: boolean }) {
         <button
           type="button"
           className={cn(
-            "inline-flex h-8 items-center gap-2 rounded-lg border border-line-2 px-2 text-[12px] text-muted-ink transition-colors hover:bg-hover hover:text-ink md:pr-1.5 md:pl-2.5",
-            // Designeer-style search pill on wider screens
-            wide && "md:h-9 md:w-[340px] md:rounded-[10px] md:bg-raised md:px-3 md:text-[13px]",
+            "wd-spring inline-flex h-8 items-center gap-2 rounded-full border border-line-2 px-2 text-[12px] text-muted-ink hover:bg-hover hover:text-ink md:pr-1.5 md:pl-2.5",
+            wide && "md:h-9 md:w-[340px] md:bg-raised md:px-3 md:text-[13px]",
           )}
           aria-label="Jump to a page, contract, transaction or doc"
         >
@@ -108,13 +107,13 @@ export function JumpMenu({ wide = false }: { wide?: boolean }) {
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-40 bg-surface/60 backdrop-blur-sm data-[state=open]:animate-in data-[state=open]:fade-in-0" />
         <Dialog.Content
-          className="fixed top-[12vh] left-1/2 z-50 w-[min(36rem,calc(100vw-2rem))] -translate-x-1/2 overflow-hidden rounded-[14px] border border-line-2 bg-surface shadow-[0_24px_60px_rgba(0,0,0,0.14)] outline-none"
+          className="fixed top-[12vh] left-1/2 z-50 w-[min(36rem,calc(100vw-2rem))] -translate-x-1/2 overflow-hidden rounded-[14px] border border-line bg-surface shadow-[var(--wd-shadow-float),0_24px_60px_rgba(0,0,0,0.18)] outline-none data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 motion-reduce:animate-none"
           aria-describedby={undefined}
         >
           <VisuallyHidden.Root>
             <Dialog.Title>Jump to</Dialog.Title>
           </VisuallyHidden.Root>
-          <div className="flex items-center gap-2 border-b border-dashed border-line-2 px-4">
+          <div className="flex items-center gap-2 border-b border-line px-4">
             <Search className="size-4 text-muted-ink" aria-hidden />
             <input
               autoFocus

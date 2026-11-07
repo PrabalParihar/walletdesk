@@ -93,7 +93,7 @@ export default function HowPage() {
           title="One swap, two sources of liquidity, one transaction."
           lead="The Uniswap pool fills what it should. A maker's wallet fills the overflow through 1inch Aqua. Chainlink CRE keeps the maker's price honest."
         />
-        <figure className="overflow-hidden rounded-[14px] border border-line bg-white">
+        <figure className="overflow-hidden rounded-[20px] border border-line bg-white shadow-[var(--wd-shadow-float)]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/architecture.svg" alt="WalletDesk architecture: maker wallet, Aqua registry, WalletDeskRouter, OverflowHook, v4 PoolManager, any v4 router, DeskPriceFeed, and the Chainlink CRE desk-guard workflow" className="w-full" />
         </figure>
@@ -101,12 +101,17 @@ export default function HowPage() {
 
       <section className="flex flex-col gap-6">
         <SectionHeading index="01" eyebrow="Step by step" title="What happens on chain" />
-        <ol className="grid gap-3 md:grid-cols-5">
+        <ol className="max-w-3xl">
           {steps.map((s, i) => (
-            <li key={s.title} className="rounded-[12px] border border-line bg-surface p-4">
-              <span className="flex size-7 items-center justify-center rounded-full bg-ink text-[13px] font-medium text-surface">{i + 1}</span>
-              <h3 className="mt-3 text-[14px] font-semibold">{s.title}</h3>
-              <p className="mt-1.5 text-[13px] leading-relaxed text-body">{s.body}</p>
+            <li key={s.title} className="grid grid-cols-[2.25rem_minmax(0,1fr)] gap-4">
+              <div className="flex flex-col items-center">
+                <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-ink text-[13px] font-medium text-surface">{i + 1}</span>
+                {i < steps.length - 1 ? <span className="my-1 w-px flex-1 bg-line-2" aria-hidden /> : null}
+              </div>
+              <div className={i < steps.length - 1 ? "pb-6" : ""}>
+                <h3 className="text-[15px] font-semibold tracking-[-0.01em]">{s.title}</h3>
+                <p className="mt-1.5 text-[13px] leading-relaxed text-body">{s.body}</p>
+              </div>
             </li>
           ))}
         </ol>
@@ -119,7 +124,7 @@ export default function HowPage() {
           title="A desk can be skipped. A swap is never blocked."
           lead="Every desk problem is a skip, logged as DeskSkipped with a reason. With no desk left, the pool fills the whole swap. The pool spot alone can be pushed inside one transaction; the off-chain CRE reference can't."
         />
-        <div className="overflow-hidden rounded-[12px] border border-line">
+        <div className="overflow-hidden rounded-[14px] border border-line shadow-[var(--wd-shadow-float)]">
           <table className="w-full text-left text-[13px]">
             <thead className="bg-sunken text-muted-ink">
               <tr>
@@ -144,7 +149,7 @@ export default function HowPage() {
         <div className="grid gap-4 md:grid-cols-3">
           {partners.map((p) => (
             <InfoCard key={p.title} tag={p.tag} title={p.title} tone="solution">
-              <ul className="-mx-1 divide-y divide-dashed divide-line-2">
+              <ul className="-mx-1 divide-y divide-line">
                 {p.points.map(([label, href]) => (
                   <li key={label}>
                     <a

@@ -29,8 +29,8 @@ const proof = [
 ];
 
 /**
- * The app frame, after Designeer's interface: a sticky sidebar (identity, Browse, Proof, and a live-network card where
- * Designeer keeps its sponsor slot) beside a top bar with a wide Ctrl K search pill. Below `lg` it collapses to a header.
+ * App frame: a hatched desk, a rounded sheet, a fixed browse rail, and a scrolling stage.
+ * Below `lg` the rail collapses into a chip row under the top bar.
  */
 export function Shell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -80,16 +80,17 @@ export function Shell({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <div className="min-h-screen overflow-x-clip bg-surface text-ink md:px-4">
+    <div className="h-dvh overflow-hidden bg-[#e6e6e9] text-ink dark:bg-[#0c0c0e]">
       <a
         href="#main"
         className="sr-only z-30 rounded-md bg-ink px-3 py-2 text-[13px] text-surface focus:not-sr-only focus:fixed focus:top-3 focus:left-3"
       >
         Skip to content
       </a>
-      <div className="wd-frame mx-auto flex min-h-screen max-w-[1320px]">
+      <div className="wd-desk relative mx-auto flex h-full max-w-[1440px] md:px-5 md:py-3">
+        <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden bg-surface md:rounded-[20px] md:border md:border-line md:shadow-[var(--wd-shadow-float)]">
         {/* Sidebar (desktop) */}
-        <aside className="sticky top-0 hidden h-screen w-[264px] shrink-0 flex-col border-r border-dashed border-line-3 lg:flex" aria-label="Site">
+        <aside className="hidden h-full w-[252px] shrink-0 flex-col overflow-y-auto border-r border-line lg:flex" aria-label="Site">
           <div className="px-6 pt-7">
             <Link href="/" className="flex items-center gap-3">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -102,7 +103,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
               A Uniswap v4 hook that fills big swaps from market makers&apos; wallets through 1inch Aqua, priced against Chainlink CRE.
             </p>
           </div>
-          <div className="mx-6 mt-6 border-t border-dashed border-line-3" />
+          <div className="mx-6 mt-6 border-t border-line" />
           <nav className="mt-5 px-4" aria-label="Browse">
             <p className="px-2 font-mono text-[11px] tracking-wider text-muted-ink uppercase">Browse</p>
             <ul className="mt-2 space-y-0.5">
@@ -112,11 +113,11 @@ export function Shell({ children }: { children: React.ReactNode }) {
                     href={href}
                     aria-current={isActive(href) ? "page" : undefined}
                     className={cn(
-                      "flex items-center gap-3 rounded-[10px] px-2.5 py-2 text-[14px] text-body transition-colors hover:bg-hover hover:text-ink",
+                      "wd-spring flex items-center gap-3 rounded-[10px] px-2.5 py-2 text-[14px] text-body hover:bg-hover hover:text-ink",
                       isActive(href) && "bg-sunken font-medium text-ink shadow-[inset_0_0_0_1px_var(--wd-line)]",
                     )}
                   >
-                    <Icon className="size-[18px] shrink-0 text-muted-ink" aria-hidden />
+                    <Icon className={cn("size-[18px] shrink-0 text-muted-ink", isActive(href) && "text-desk")} aria-hidden />
                     {label}
                   </Link>
                 </li>
@@ -132,7 +133,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
                     href={href}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="group flex items-center gap-3 rounded-[10px] px-2.5 py-2 text-[14px] text-body transition-colors hover:bg-hover hover:text-ink"
+                    className="group wd-spring flex items-center gap-3 rounded-[10px] px-2.5 py-2 text-[14px] text-body hover:bg-hover hover:text-ink"
                   >
                     <Icon className="size-[18px] shrink-0 text-muted-ink" aria-hidden />
                     <span className="flex-1">{label}</span>
@@ -142,9 +143,9 @@ export function Shell({ children }: { children: React.ReactNode }) {
               ))}
             </ul>
           </div>
-          <div className="mt-auto px-4 pb-5">
+          <div className="mt-auto px-5 pt-6 pb-7">
             {/* Where Designeer keeps its sponsor slot: the live deployment */}
-            <div className="rounded-[14px] border border-line bg-raised p-4">
+            <div className="rounded-[14px] border border-line bg-raised p-4 shadow-[var(--wd-shadow-float)]">
               <p className="flex items-center gap-2 text-[13px] font-medium">
                 <span className="relative flex size-2">
                   <span className="absolute inline-flex size-2 rounded-full bg-[#34D399] opacity-60 motion-safe:animate-ping" />
@@ -168,13 +169,14 @@ export function Shell({ children }: { children: React.ReactNode }) {
                   <ArrowUpRight className="size-3.5" aria-hidden />
                 </a>
               ) : null}
+              <p className="mt-3 font-mono text-[11px] leading-relaxed text-muted-ink">Built for ETHGlobal Mumbai</p>
             </div>
-            <p className="mt-4 px-1 font-mono text-[11px] leading-relaxed text-muted-ink">Built for ETHGlobal Mumbai</p>
           </div>
         </aside>
 
-        <div className="flex min-w-0 flex-1 flex-col">
-          <header className="sticky top-0 z-20 border-b border-dashed border-line-3 bg-surface/90 backdrop-blur">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+          <div className="wd-scroll flex min-h-0 flex-1 flex-col overflow-y-auto">
+          <header className="sticky top-0 z-20 border-b border-line bg-surface/75 backdrop-blur-xl supports-[backdrop-filter]:bg-surface/65">
             <div className="flex items-center justify-between gap-3 px-4 py-3 md:px-6">
               <div className="flex items-center gap-2">
                 <Link href="/" className="flex items-center gap-2 text-[15px] font-semibold tracking-tight lg:hidden">
@@ -202,29 +204,37 @@ export function Shell({ children }: { children: React.ReactNode }) {
                 {wallet}
               </div>
             </div>
-            <nav className="flex gap-1 overflow-x-auto border-t border-dashed border-line-3 px-4 py-2 lg:hidden" aria-label="Browse">
-              {browse.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  aria-current={isActive(link.href) ? "page" : undefined}
-                  className={cn("shrink-0 rounded-lg px-3 py-1.5 text-[13px] text-muted-ink", isActive(link.href) && "bg-sunken text-ink")}
-                >
-                  {link.label}
-                </Link>
-              ))}
-            </nav>
+            <div className="relative lg:hidden">
+              <nav className="flex gap-1 overflow-x-auto border-t border-line px-4 py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" aria-label="Browse">
+                {browse.map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    aria-current={isActive(link.href) ? "page" : undefined}
+                    className={cn(
+                      "wd-spring h-8 shrink-0 rounded-full px-3.5 text-[13px] leading-8 text-muted-ink",
+                      isActive(link.href) ? "bg-sunken font-medium text-ink shadow-[inset_0_0_0_1px_var(--wd-line)]" : "hover:bg-hover hover:text-ink",
+                    )}
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+              </nav>
+              <span aria-hidden className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-surface to-transparent" />
+            </div>
           </header>
-          <main id="main" tabIndex={-1} className="w-full flex-1 px-4 py-8 outline-none md:px-8 md:py-12">
+          <main id="main" tabIndex={-1} className="w-full flex-1 px-4 py-8 outline-none md:px-8 md:py-10">
             {children}
           </main>
-          <footer className="border-t border-dashed border-line-3">
+          <footer className="mt-auto border-t border-line">
             <div className="flex flex-wrap gap-x-4 gap-y-1 px-4 py-4 font-mono text-[11px] text-muted-ink md:px-8">
               <span>Powered by SwapVM — © Degensoft Ltd 2025</span>
               <span>Powered by Aqua — © Degensoft Ltd 2025</span>
               <span>Uniswap v4 hook · Chainlink CRE reference price</span>
             </div>
           </footer>
+          </div>
+        </div>
         </div>
       </div>
     </div>

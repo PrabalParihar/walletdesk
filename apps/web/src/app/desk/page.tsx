@@ -14,7 +14,7 @@ import { aquaAbi, builderAbi, erc20Abi, hookAbi, poolKey, shortError } from "@/l
 import { Amount } from "@/components/amount";
 import { CopyButton } from "@/components/copy-button";
 import { MintTestTokens } from "@/components/mint-test-tokens";
-import { ExternalLink } from "@/components/site";
+import { EmptyState, ExternalLink, PageHeader, StatusChip } from "@/components/site";
 import { TxSteps, useTxSteps } from "@/components/tx-steps";
 import { encodeProgram, formatPriceX18, priceToX18, programHash, quoteExactIn, STORAGE_KEY, type DeskDraft } from "@/lib/desk";
 import { txUrl } from "@/lib/live";
@@ -212,149 +212,166 @@ export default function DeskPage() {
     });
   })();
 
+  const priceUnit = state.status === "ready" ? `${state.deployment.symbol1} per ${state.deployment.symbol0}` : "token1 per token0";
+
   return (
     <div className="flex flex-col gap-6">
-      <section className="rounded-[14px] border border-line bg-raised p-5 md:p-6">
-        <h1 className="text-2xl font-semibold tracking-tight md:text-[28px]">Make a desk</h1>
-        <p className="mt-2 max-w-3xl text-[14px] leading-relaxed text-body">
-          A desk is a quote that lives in your wallet. You pick a price band and a fee, ship it as a DeskBand strategy on 1inch Aqua, and
-          register it on the hook. Your tokens never leave the wallet until a swap fills against your desk.
-        </p>
-        {state.status === "ready" ? (
-          <div className="mt-4">
-            <MintTestTokens deployment={state.deployment} which="both" amount="1000" />
-          </div>
-        ) : null}
-      </section>
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-      <Card className="shadow-[0_8px_30px_rgba(0,0,0,0.04)]">
-        <CardHeader>
-          <CardTitle>Ship a desk</CardTitle>
-          <p className="text-[13px] text-muted-ink">
-            Approve the Aqua registry, ship a DeskBand strategy, and register it on OverflowHook. Shipping does not move tokens. Prices are{" "}
-            {state.status === "ready" ? `${state.deployment.symbol1} per ${state.deployment.symbol0}` : "token1 per token0"}. The desk is
-            skipped whenever its quote is further than the max deviation from the pool spot or the Chainlink CRE reference.
-          </p>
-        </CardHeader>
-        <CardContent className="grid gap-4">
-          {state.status === "loading" ? <Notice tone="info">Loading the deployment…</Notice> : null}
-          {state.status === "missing" ? (
-            <Notice tone="info">
-              No local deployment yet. From the repo root run <span className="font-mono">./script/demo.sh</span>, or run the app without{" "}
-              <span className="font-mono">NEXT_PUBLIC_NETWORK</span> to use the live Unichain Sepolia deployment.
-            </Notice>
-          ) : null}
-          {state.status === "error" ? <Notice tone="error">{state.error}</Notice> : null}
+      <PageHeader
+        eyebrow="Maker"
+        title="Make a desk"
+        lead="A desk is a quote that lives in your wallet. You pick a price band and a fee, ship it as a DeskBand strategy on 1inch Aqua, and register it on the hook. Your tokens never leave the wallet until a swap fills against your desk."
+      >
+        <div className="flex flex-wrap items-center gap-2">
           {state.status === "ready" ? (
-            <Notice tone="info">
-              Pair {state.deployment.symbol0}/{state.deployment.symbol1} on chain {state.deployment.chainId}. Connect a wallet on this chain;
-              it becomes the maker.
-            </Notice>
+            <StatusChip tone="brand">
+              {state.deployment.symbol0}/{state.deployment.symbol1} · chain {state.deployment.chainId}
+            </StatusChip>
           ) : null}
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Shelf amount" value={form.amount} onChange={(value) => set("amount", value)} />
-            <Field label="Max deviation, bps" value={form.maxDeviationBps} onChange={(value) => set("maxDeviationBps", value)} />
-            <Field label="Price low" value={form.priceLow} onChange={(value) => set("priceLow", value)} />
-            <Field label="Price high" value={form.priceHigh} onChange={(value) => set("priceHigh", value)} />
-            <Field label="Fee bps" value={form.feeBps} onChange={(value) => set("feeBps", value)} />
-            <Field label="Decay half life, seconds (0 = off)" value={form.halfLife} onChange={(value) => set("halfLife", value)} />
-          </div>
-          <TxSteps steps={tx.steps} explorer={state.status === "ready" ? state.deployment.explorer : undefined} />
-          {error ? <Notice tone="error">{error}</Notice> : null}
-          <div className="flex flex-wrap gap-2">
-            {isConnected ? (
-              <Button type="button" onClick={() => void ship()} disabled={busy || state.status !== "ready"}>
-                {busy ? "Shipping…" : "Approve and ship"}
-              </Button>
-            ) : (
-              // A disabled "Connect" button looks clickable and does nothing; this one connects.
-              <Button type="button" variant="outline" disabled={!injected || connecting} onClick={() => injected && connect({ connector: injected })}>
-                {injected ? "Connect a wallet to ship" : "No browser wallet found"}
-              </Button>
-            )}
-            {!isConnected && connectError ? (
-              <Notice tone="error">
-                Could not connect a wallet ({connectError.message.split(".")[0]}). Install a browser wallet on Unichain Sepolia, or run the local
-                demo with ./script/demo.sh.
+          <StatusChip tone={isConnected ? "ok" : "neutral"}>{isConnected ? "Wallet connected · you are the maker" : "Wallet not connected"}</StatusChip>
+          {state.status === "ready" ? <MintTestTokens deployment={state.deployment} which="both" amount="1000" /> : null}
+        </div>
+      </PageHeader>
+
+      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
+        <Card>
+          <CardHeader>
+            <CardTitle>Ship a desk</CardTitle>
+            <p className="text-[13px] leading-relaxed text-muted-ink">
+              Approve the Aqua registry, ship a DeskBand strategy, and register it on OverflowHook. Shipping does not move tokens. Prices are{" "}
+              {priceUnit}. The desk is skipped whenever its quote is further than the max deviation from the pool spot or the Chainlink CRE
+              reference.
+            </p>
+          </CardHeader>
+          <CardContent className="grid gap-5">
+            {state.status === "loading" ? <Notice tone="info">Loading the deployment…</Notice> : null}
+            {state.status === "missing" ? (
+              <Notice tone="info">
+                No local deployment yet. From the repo root run <span className="font-mono">./script/demo.sh</span>, or run the app without{" "}
+                <span className="font-mono">NEXT_PUBLIC_NETWORK</span> to use the live Unichain Sepolia deployment.
               </Notice>
             ) : null}
-          </div>
-        </CardContent>
-      </Card>
-      <div className="grid content-start gap-6">
-      <Card className="border-desk/15 bg-solution shadow-none">
-        <CardHeader>
-          <CardTitle>Quote preview</CardTitle>
-          <p className="text-[13px] text-muted-ink">
-            What this desk would pay for a {PREVIEW_RESIDUAL} {sym0} overflow, with equal shelves. Same math as the on-chain DeskBand opcode.
-          </p>
-        </CardHeader>
-        <CardContent className="space-y-3 text-[13px]">
-          {preview && !("error" in preview) ? (
-            <>
-              <p className="text-[28px] font-semibold tracking-tight tabular-nums">
-                <Amount value={Number(formatUnits(preview.amountOut, d1))} /> {sym1}
-              </p>
-              <Row label="Band price now" value={`${formatPriceX18(preview.priceX18, d0, d1)} ${sym1} per ${sym0}`} />
-              <Row label="Your spread (kept in wallet)" value={`${formatPriceX18((preview.feeOut * 10n ** 18n) / 10n ** BigInt(d1), 18, 18, 6)} ${sym1}`} />
-              <p className="text-[12px] leading-relaxed text-muted-ink">
-                As your {sym1} shelf drains, the price slides toward the low end of the band, so the quote gets worse for takers on the side
-                you are running out of.
-              </p>
-            </>
-          ) : (
-            <p className="text-muted-ink">{preview && "error" in preview ? preview.error : "Set a shelf amount and a valid band."}</p>
-          )}
-        </CardContent>
-      </Card>
-      <Card className="bg-sunken shadow-none">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Program</CardTitle>
-            <Badge variant="secondary">{result ? "shipped" : "waiting"}</Badge>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-3 text-[13px]">
-          <Row label="Wallet movement" value="None on ship" />
-          <Row label="Registry" value={state.status === "ready" ? state.deployment.aqua : "Aqua"} />
-          <div>
-            <p className="flex items-center gap-1 text-muted-ink">
-              Strategy bytes {result ? <CopyButton value={result.strategy} label="strategy bytes" /> : null}
-            </p>
-            <p className="mt-1 break-all font-mono text-xs">{result?.strategy ?? "Ship to write the order Aqua stores."}</p>
-          </div>
-          <div>
-            <p className="text-muted-ink">Register transaction</p>
-            <p className="mt-1 break-all font-mono text-xs">
-              {result ? (
-                txUrl(state.status === "ready" ? state.deployment.explorer : undefined, result.hash) ? (
-                  <ExternalLink href={txUrl(state.status === "ready" ? state.deployment.explorer : undefined, result.hash)}>
-                    {result.hash}
-                  </ExternalLink>
-                ) : (
-                  result.hash
-                )
+            {state.status === "error" ? <Notice tone="error">{state.error}</Notice> : null}
+            <fieldset className="grid gap-3">
+              <legend className="mb-1 font-mono text-[11px] tracking-wider text-muted-ink uppercase">Inventory</legend>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Field label="Shelf amount" hint="Virtual balance on each side. Nothing moves until a fill." value={form.amount} onChange={(value) => set("amount", value)} />
+                <Field label="Max deviation, bps" value={form.maxDeviationBps} onChange={(value) => set("maxDeviationBps", value)} />
+              </div>
+            </fieldset>
+            <fieldset className="grid gap-3">
+              <legend className="mb-1 font-mono text-[11px] tracking-wider text-muted-ink uppercase">Price band</legend>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Field label="Price low" value={form.priceLow} onChange={(value) => set("priceLow", value)} />
+                <Field label="Price high" value={form.priceHigh} onChange={(value) => set("priceHigh", value)} />
+                <Field label="Fee bps" value={form.feeBps} onChange={(value) => set("feeBps", value)} />
+                <Field label="Decay half life, seconds" hint="0 turns decay off." value={form.halfLife} onChange={(value) => set("halfLife", value)} />
+              </div>
+            </fieldset>
+            <TxSteps steps={tx.steps} explorer={state.status === "ready" ? state.deployment.explorer : undefined} />
+            {error ? <Notice tone="error">{error}</Notice> : null}
+            <div className="grid gap-2 border-t border-line pt-4">
+              {isConnected ? (
+                <Button type="button" className="h-11 w-full rounded-[10px] sm:w-auto" onClick={() => void ship()} disabled={busy || state.status !== "ready"}>
+                  {busy ? "Shipping…" : "Approve and ship"}
+                </Button>
               ) : (
-                "No transaction yet."
+                // A disabled "Connect" button looks clickable and does nothing; this one connects.
+                <Button type="button" className="h-11 w-full rounded-[10px] sm:w-auto" disabled={!injected || connecting} onClick={() => injected && connect({ connector: injected })}>
+                  {injected ? "Connect a wallet to ship" : "No browser wallet found"}
+                </Button>
               )}
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+              {!isConnected && connectError ? (
+                <Notice tone="error">
+                  Could not connect a wallet ({connectError.message.split(".")[0]}). Install a browser wallet on Unichain Sepolia, or run the local
+                  demo with ./script/demo.sh.
+                </Notice>
+              ) : null}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <CardTitle>Quote preview</CardTitle>
+                <p className="mt-1 text-[13px] leading-relaxed text-muted-ink">
+                  What this desk would pay for a {PREVIEW_RESIDUAL} {sym0} overflow, with equal shelves. Same math as the on-chain DeskBand opcode.
+                </p>
+              </div>
+              <StatusChip tone={result ? "ok" : "neutral"}>{result ? "shipped" : "waiting"}</StatusChip>
+            </div>
+          </CardHeader>
+          <CardContent className="grid gap-4 text-[13px]">
+            {preview && !("error" in preview) ? (
+              <div className="rounded-[14px] border border-desk/15 bg-solution px-4 py-4">
+                <p className="text-[12px] font-medium text-muted-ink">Taker receives</p>
+                <p className="mt-1 text-[40px] leading-none font-semibold tracking-[-0.03em] tabular-nums text-ink">
+                  <Amount value={Number(formatUnits(preview.amountOut, d1))} />
+                  <span className="ml-2 text-[18px] font-medium tracking-normal text-body">{sym1}</span>
+                </p>
+              </div>
+            ) : (
+              <EmptyState title={preview && "error" in preview ? "This band does not quote" : "Set a shelf and a band"}>
+                {preview && "error" in preview ? preview.error : "The preview uses the same DeskBand math the opcode will run on chain."}
+              </EmptyState>
+            )}
+            {preview && !("error" in preview) ? (
+              <div className="grid gap-2">
+                <Row label="Band price now" value={`${formatPriceX18(preview.priceX18, d0, d1)} ${sym1} per ${sym0}`} />
+                <Row label="Your spread (kept in wallet)" value={`${formatPriceX18((preview.feeOut * 10n ** 18n) / 10n ** BigInt(d1), 18, 18, 6)} ${sym1}`} />
+                <p className="text-[12px] leading-relaxed text-muted-ink">
+                  As your {sym1} shelf drains, the price slides toward the low end of the band, so the quote gets worse for takers on the side
+                  you are running out of.
+                </p>
+              </div>
+            ) : null}
+            <div className="grid gap-3 border-t border-line pt-4">
+              <div className="flex items-center justify-between">
+                <p className="font-medium text-ink">Program</p>
+                <Badge variant="secondary">{result ? "on Aqua" : "not shipped"}</Badge>
+              </div>
+              <Row label="Wallet movement" value="None on ship" />
+              <Row label="Registry" value={state.status === "ready" ? state.deployment.aqua : "Aqua"} />
+              <div>
+                <p className="flex items-center gap-1 text-muted-ink">
+                  Strategy bytes {result ? <CopyButton value={result.strategy} label="strategy bytes" /> : null}
+                </p>
+                <p className="mt-1 break-all font-mono text-xs">{result?.strategy ?? "Ship to write the order Aqua stores."}</p>
+              </div>
+              <div>
+                <p className="text-muted-ink">Register transaction</p>
+                <p className="mt-1 break-all font-mono text-xs">
+                  {result ? (
+                    txUrl(state.status === "ready" ? state.deployment.explorer : undefined, result.hash) ? (
+                      <ExternalLink href={txUrl(state.status === "ready" ? state.deployment.explorer : undefined, result.hash)}>
+                        {result.hash}
+                      </ExternalLink>
+                    ) : (
+                      result.hash
+                    )
+                  ) : (
+                    "No transaction yet."
+                  )}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
-    </div>
     </div>
   );
 }
 
-function Field({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+function Field({ label, hint, value, onChange }: { label: string; hint?: string; value: string; onChange: (value: string) => void }) {
   const id = useId();
   return (
     <div className="grid gap-1.5">
-      <Label htmlFor={id} className="text-[12px] text-muted-ink">
+      <Label htmlFor={id} className="text-[12px] font-medium text-muted-ink">
         {label}
       </Label>
-      <Input id={id} inputMode="decimal" autoComplete="off" value={value} onChange={(event) => onChange(event.target.value)} />
+      <Input id={id} inputMode="decimal" autoComplete="off" value={value} onChange={(event) => onChange(event.target.value)} className="font-mono" />
+      {hint ? <p className="text-[12px] leading-snug text-muted-ink">{hint}</p> : null}
     </div>
   );
 }

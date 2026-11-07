@@ -1,5 +1,6 @@
 import { ArrowUpRight, type LucideIcon } from "lucide-react";
 import Link from "next/link";
+import type { ComponentProps } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -56,7 +57,7 @@ export function SectionHeading({
   return (
     <div className="max-w-2xl">
       <Eyebrow index={index}>{eyebrow}</Eyebrow>
-      <Heading id={id} className="mt-2 text-2xl font-semibold tracking-tight text-balance md:text-[28px]">
+      <Heading id={id} className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-balance md:text-[28px] md:leading-[1.15]">
         {title}
       </Heading>
       {lead ? <p className="mt-3 text-[15px] leading-relaxed text-muted-ink">{lead}</p> : null}
@@ -82,7 +83,7 @@ export function InfoCard({
   return (
     <article
       className={cn(
-        "rounded-[12px] border p-5",
+        "rounded-[14px] border p-5 shadow-[var(--wd-shadow-float)]",
         tone === "problem" && "border-[#E11D48]/15 bg-problem-soft",
         tone === "solution" && "border-desk/15 bg-solution",
         tone === "plain" && "border-line bg-surface",
@@ -124,7 +125,7 @@ export function StatLink({ value, label, href, internal }: { value: string; labe
       {href ? <ArrowUpRight className="absolute top-4 right-4 size-4 text-link" aria-hidden /> : null}
     </>
   );
-  const cls = "relative block rounded-[12px] border border-line bg-surface p-4 transition-colors hover:border-desk/40";
+  const cls = "wd-lift relative block rounded-[14px] border border-line bg-surface p-4 shadow-[var(--wd-shadow-float)] hover:border-desk/30";
   if (!href) return <div className={cls}>{body}</div>;
   if (internal) {
     return (
@@ -163,7 +164,7 @@ export function SplitBar({
       <div className={cn("flex h-11 w-full overflow-hidden rounded-[10px] text-[13px] font-medium tabular-nums", reveal && "wd-reveal")} role="img"
         aria-label={`${fmt(total)} ${symbol} in: ${fmt(poolPart)} filled by the Uniswap pool, ${fmt(deskPart)} filled from a maker wallet`}>
         <div
-          className="flex items-center justify-center bg-[var(--pool)] px-2 text-white transition-[width] duration-300 ease-out motion-reduce:transition-none"
+          className="flex items-center justify-center bg-[var(--pool)] px-2 text-white transition-[width] duration-300 ease-[cubic-bezier(0.3,1.12,0.4,1)] motion-reduce:transition-none"
           style={{ width: `${poolPct}%`, minWidth: poolPart > 0 ? "3.5rem" : 0 }}
         >
           {poolPart > 0 ? `${fmt(poolPart)} ${symbol}` : null}
@@ -182,5 +183,71 @@ export function SplitBar({
         {caption ? <span className="w-full text-[12px] text-muted-ink">{caption}</span> : null}
       </figcaption>
     </figure>
+  );
+}
+
+/** Page title used by the desk, live, and rebate screens: one eyebrow, one sentence, then the actions. */
+export function PageHeader({
+  eyebrow,
+  title,
+  lead,
+  children,
+}: {
+  eyebrow?: string;
+  title: string;
+  lead?: string;
+  children?: React.ReactNode;
+}) {
+  return (
+    <header className="flex flex-col gap-3">
+      {eyebrow ? <Eyebrow>{eyebrow}</Eyebrow> : null}
+      <h1 className="text-[28px] font-semibold tracking-[-0.03em] text-balance md:text-[34px] md:leading-[1.1]">{title}</h1>
+      {lead ? <p className="max-w-2xl text-[14px] leading-relaxed text-pretty text-body">{lead}</p> : null}
+      {children}
+    </header>
+  );
+}
+
+/** Small status pill. Tones stay inside the existing ink / desk / problem palette. */
+export function StatusChip({ children, tone = "neutral" }: { children: React.ReactNode; tone?: "neutral" | "ok" | "warn" | "brand" }) {
+  const toneClass = {
+    neutral: "bg-sunken text-body",
+    ok: "bg-[#047857]/10 text-[#047857] dark:text-[#34D399]",
+    warn: "bg-problem-soft text-problem",
+    brand: "bg-desk/10 text-desk-ink",
+  }[tone];
+  return <span className={cn("inline-flex h-7 items-center gap-1.5 rounded-full px-2.5 text-[12px] font-medium", toneClass)}>{children}</span>;
+}
+
+/** Binary or filter choice, in the same pill family as a catalogue chip. Selected state is the desk blue. */
+export function FilterChip({ pressed, className, children, ...props }: { pressed: boolean } & ComponentProps<"button">) {
+  return (
+    <button
+      type="button"
+      aria-pressed={pressed}
+      className={cn(
+        "wd-spring inline-flex h-8 items-center rounded-full px-3.5 text-[13px] font-medium disabled:pointer-events-none disabled:opacity-40",
+        pressed ? "bg-desk text-white shadow-[0_1px_2px_rgba(0,102,250,0.45)]" : "text-body hover:bg-surface hover:text-ink",
+        className,
+      )}
+      {...props}
+    >
+      {children}
+    </button>
+  );
+}
+
+/** Quiet empty surface: a hatched tile, a title, and one sentence. No illustration. */
+export function EmptyState({ title, children }: { title: string; children?: React.ReactNode }) {
+  return (
+    <div className="flex flex-col items-center rounded-[14px] border border-line bg-sunken px-5 py-8 text-center">
+      <span
+        aria-hidden
+        className="mb-3 size-10 rounded-[8px] border border-line bg-surface"
+        style={{ backgroundImage: "repeating-linear-gradient(-45deg, var(--wd-hatch) 0 1px, transparent 1px 6px)" }}
+      />
+      <p className="text-[14px] font-medium text-ink">{title}</p>
+      {children ? <div className="mt-1 max-w-sm text-[13px] leading-relaxed text-pretty text-muted-ink">{children}</div> : null}
+    </div>
   );
 }
