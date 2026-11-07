@@ -32,5 +32,6 @@ test("globals.css :root uses the palette values", () => {
   for (const [token, value] of [["--wd-surface", palette.page], ["--wd-ink", palette.ink], ["--wd-muted", palette.muted], ["--pool", palette.pool], ["--wd-desk", palette.wallet]] as const) {
     assert.match(css, new RegExp(`${token}:\\s*${value.toLowerCase()};`), token);
   }
+  assert.match(css, /:root\s*\{\s*color-scheme:\s*dark;/, ":root declares color-scheme: dark");
   assert.doesNotMatch(css, /^\.dark\s*\{/m, "the .dark block is gone");
 });
