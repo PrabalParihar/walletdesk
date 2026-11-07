@@ -3,7 +3,6 @@ import { Geist_Mono, Inter } from "next/font/google";
 
 import { Providers } from "@/components/providers";
 import { Shell } from "@/components/shell";
-import { themeInitScript } from "@/components/theme-toggle";
 
 import "./globals.css";
 
@@ -37,11 +36,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${inter.variable} ${mono.variable}`} suppressHydrationWarning>
-      <head>
-        {/* Sets the theme class before first paint, so the page never flashes the wrong theme. */}
-        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
-      </head>
+    <html lang="en" className={`dark ${inter.variable} ${mono.variable}`} suppressHydrationWarning>
       <body className="antialiased">
         <Providers>
           <Shell>{children}</Shell>

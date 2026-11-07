@@ -10,7 +10,7 @@
   --font-sans: var(--font-inter);
   --font-mono: var(--font-geist-mono);
   --font-heading: var(--font-inter);
-  /* WalletDesk theme tokens (values in :root and [data-theme="dark"] below) */
+  /* WalletDesk theme tokens (black-only; values in :root below) */
   --color-ink: var(--wd-ink);
   --color-body: var(--wd-body);
   --color-muted-ink: var(--wd-muted);
@@ -61,14 +61,15 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  /* 10px family: sm 6 / md 8 / lg 10 / xl 14 / tile 20 / sheet 24 */
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 10px;
-  --radius-xl: 14px;
-  --radius-2xl: 20px;
-  --radius-3xl: 24px;
-  --radius-4xl: 28px;
+  /* Square corners; only sm keeps a 2px hairline softening */
+  --radius-sm: 2px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+  --radius-2xl: 0px;
+  --radius-3xl: 0px;
+  --radius-4xl: 0px;
+  --color-on-fill: #000000;
   --shadow-float: var(--wd-shadow-float);
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-surface: cubic-bezier(0.215, 0.61, 0.355, 1);
@@ -76,108 +77,62 @@
 }
 
 :root {
-  --background: #ffffff;
-  --foreground: #18181b;
-  --card: #ffffff;
-  --card-foreground: #18181b;
-  --popover: #ffffff;
-  --popover-foreground: #18181b;
-  --primary: #0066fa;
-  --primary-foreground: #ffffff;
-  --secondary: #ffffff;
-  --secondary-foreground: #18181b;
-  --muted: #f2f2f3;
-  --muted-foreground: #5d5d66;
-  --accent: #e8f3ff;
-  --accent-foreground: #18181b;
-  --destructive: #e11d48;
-  --border: rgba(0, 0, 0, 0.08);
-  --input: rgba(0, 0, 0, 0.12);
-  --ring: #0066fa;
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 10px;
-  --wd-shadow-float: 0 0 0 1px #0000000f, 0 8px 24px -6px #00000024, 0 2px 6px -2px #0000000f;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
-  /* Uniswap pink, darkened just enough for white 13px labels to pass WCAG AA (5.1:1; #FF007A is 3.8:1). */
-  --pool: #d6006f;
-
-  --wd-ink: #18181b;
-  --wd-body: #4a4a52;
-  --wd-muted: #5d5d66;
-  --wd-faint: #a1a1aa;
-  --wd-faint-strong: #71717a;
-  --wd-surface: #ffffff;
-  --wd-raised: #fafafb;
-  --wd-sunken: #f2f2f3;
-  --wd-band: #18181b;
-  --wd-band-link: #7cb4ff;
-  --wd-desk: #0066fa;
-  --wd-link: #0066fa;
-  --wd-hatch: rgba(0, 0, 0, 0.07);
-  --wd-desk-ink: #0050c8;
-  --wd-problem: #be123c;
-  --wd-problem-soft: #fff7f8;
-  --wd-solution: #f5f9ff;
-  --wd-line: rgba(0, 0, 0, 0.08);
-  --wd-line-2: rgba(0, 0, 0, 0.1);
-  --wd-line-3: rgba(0, 0, 0, 0.15);
-  --wd-hover: rgba(0, 0, 0, 0.05);
-}
-
-.dark {
-  color-scheme: dark;
-  --background: #0b0b0c;
-  --foreground: #f4f4f5;
-  --card: #141416;
-  --card-foreground: #f4f4f5;
-  --popover: #1c1c1f;
-  --popover-foreground: #f4f4f5;
-  --wd-shadow-float: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 16px 40px -16px rgba(0, 0, 0, 0.7), 0 2px 8px -2px rgba(0, 0, 0, 0.5);
-  --primary: #0066fa;
-  --primary-foreground: #ffffff;
-  --secondary: #141416;
-  --secondary-foreground: #f4f4f5;
-  --muted: #1c1c1f;
-  --muted-foreground: #a1a1aa;
-  --accent: #1c1c1f;
-  --accent-foreground: #f4f4f5;
+  --background: #000000;
+  --foreground: #ededed;
+  --card: #0a0a0a;
+  --card-foreground: #ededed;
+  --popover: #0a0a0a;
+  --popover-foreground: #ededed;
+  --primary: #ededed;
+  --primary-foreground: #000000;
+  --secondary: #0a0a0a;
+  --secondary-foreground: #ededed;
+  --muted: #141414;
+  --muted-foreground: #8a8a8a;
+  --accent: #141414;
+  --accent-foreground: #ededed;
   --destructive: #fb7185;
-  --border: rgba(255, 255, 255, 0.1);
-  --input: rgba(255, 255, 255, 0.14);
-  --ring: #7cb4ff;
+  --border: rgba(255, 255, 255, 0.08);
+  --input: rgba(255, 255, 255, 0.12);
+  --ring: #ededed;
+  --chart-1: #ededed;
+  --chart-2: #ff3d9a;
+  --chart-3: #3d8bff;
+  --chart-4: #8a8a8a;
+  --chart-5: #5a5a5a;
+  --radius: 0px;
+  --wd-shadow-float: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 16px 40px -16px rgba(0, 0, 0, 0.7);
+  --sidebar: #0a0a0a;
+  --sidebar-foreground: #ededed;
+  --sidebar-primary: #ededed;
+  --sidebar-primary-foreground: #000000;
+  --sidebar-accent: #141414;
+  --sidebar-accent-foreground: #ededed;
+  --sidebar-border: rgba(255, 255, 255, 0.08);
+  --sidebar-ring: #ededed;
+  /* Pool leg pink; wallet leg blue. Text on either fill is black (--color-on-fill) for AA. */
+  --pool: #ff3d9a;
 
-  --wd-ink: #f4f4f5;
-  --wd-body: #c9c9cf;
-  --wd-muted: #a1a1aa;
-  --wd-faint: #8b8b94;
-  --wd-faint-strong: #a1a1aa;
-  --wd-surface: #0b0b0c;
-  --wd-raised: #141416;
-  --wd-sunken: #1c1c1f;
-  --wd-band: #141416;
-  --wd-band-link: #7cb4ff;
-  --wd-desk: #0066fa;
-  --wd-link: #7cb4ff;
-  --wd-desk-ink: #9cc3ff;
+  --wd-ink: #ededed;
+  --wd-body: #c4c4c4;
+  --wd-muted: #8a8a8a;
+  --wd-faint: #5a5a5a; /* decorative only, never text */
+  --wd-faint-strong: #8a8a8a;
+  --wd-surface: #000000;
+  --wd-raised: #0a0a0a;
+  --wd-sunken: #141414;
+  --wd-band: #0a0a0a;
+  --wd-band-link: #ededed;
+  --wd-desk: #3d8bff;
+  --wd-link: #ededed;
+  --wd-desk-ink: #3d8bff;
   --wd-problem: #fb7185;
-  --wd-problem-soft: #1c0d12;
-  --wd-solution: #0b1528;
+  --wd-problem-soft: #0a0a0a;
+  --wd-solution: #0a0a0a;
   --wd-line: rgba(255, 255, 255, 0.08);
   --wd-line-2: rgba(255, 255, 255, 0.12);
   --wd-line-3: rgba(255, 255, 255, 0.18);
   --wd-hover: rgba(255, 255, 255, 0.06);
-  --wd-hatch: rgba(255, 255, 255, 0.07);
 }
 
 @layer base {
@@ -199,7 +154,7 @@
   summary:focus-visible {
     outline: 2px solid var(--ring);
     outline-offset: 2px;
-    border-radius: 6px;
+    border-radius: 0;
   }
 }
 
@@ -219,28 +174,11 @@
   }
 }
 
-/* The sheet sits on a desk. Hatched rails live in the gutter, outside the rounded sheet. */
-@media (min-width: 768px) {
-  .wd-desk {
-    position: relative;
-  }
-  .wd-desk::before,
-  .wd-desk::after {
-    content: "";
-    position: absolute;
-    top: 18px;
-    bottom: 18px;
-    width: 11px;
-    border-inline: 1px solid var(--wd-line);
-    background-image: repeating-linear-gradient(-45deg, var(--wd-hatch) 0 1px, transparent 1px 6px);
-    pointer-events: none;
-  }
-  .wd-desk::before {
-    left: 4px;
-  }
-  .wd-desk::after {
-    right: 4px;
-  }
+/* Faint dot grid that fades out at the top and bottom edges. */
+.wd-grid {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.09) 1px, transparent 1px);
+  background-size: 18px 18px;
+  mask-image: linear-gradient(180deg, transparent, #000 30%, #000 70%, transparent);
 }
 
 .wd-scroll {

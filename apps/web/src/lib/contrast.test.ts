@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { contrastRatio } from "./contrast.ts";
 import { palette } from "./palette.ts";
 
@@ -24,4 +25,12 @@ for (const [fg, bg] of bodyText) {
 test("white on the legs fails, which is why onFill is black", () => {
   assert.ok(contrastRatio("#FFFFFF", palette.pool) < AA);
   assert.ok(contrastRatio("#FFFFFF", palette.wallet) < AA);
+});
+
+test("globals.css :root uses the palette values", () => {
+  const css = readFileSync(new URL("../app/globals.css", import.meta.url), "utf8").toLowerCase();
+  for (const [token, value] of [["--wd-surface", palette.page], ["--wd-ink", palette.ink], ["--wd-muted", palette.muted], ["--pool", palette.pool], ["--wd-desk", palette.wallet]] as const) {
+    assert.match(css, new RegExp(`${token}:\\s*${value.toLowerCase()};`), token);
+  }
+  assert.doesNotMatch(css, /^\.dark\s*\{/m, "the .dark block is gone");
 });
