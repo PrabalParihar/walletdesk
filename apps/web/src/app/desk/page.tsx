@@ -219,7 +219,7 @@ export default function DeskPage() {
       <PageHeader
         eyebrow="Maker"
         title="Make a desk"
-        lead="A desk is a quote that lives in your wallet. You pick a price band and a fee, ship it as a DeskBand strategy on 1inch Aqua, and register it on the hook. Your tokens never leave the wallet until a swap fills against your desk."
+        lead="A price band in your wallet. Tokens move only when a swap fills."
       >
         <div className="flex flex-wrap items-center gap-2">
           {state.status === "ready" ? (
@@ -237,9 +237,7 @@ export default function DeskPage() {
           <CardHeader>
             <CardTitle>Ship a desk</CardTitle>
             <p className="text-[13px] leading-relaxed text-muted-ink">
-              Approve the Aqua registry, ship a DeskBand strategy, and register it on OverflowHook. Shipping does not move tokens. Prices are{" "}
-              {priceUnit}. The desk is skipped whenever its quote is further than the max deviation from the pool spot or the Chainlink CRE
-              reference.
+              Approve Aqua, ship the DeskBand, register it. Nothing moves. Prices are {priceUnit}.
             </p>
           </CardHeader>
           <CardContent className="grid gap-5">

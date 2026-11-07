@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import { Eyebrow, ExternalLink, InfoCard, SectionHeading, SplitBar, StatLink } from "@/components/site";
 import { Button } from "@/components/ui/button";
-import { REPO_URL, repoFile, SEPOLIA_DEPLOYMENT, SEPOLIA_EXPLORER, SEPOLIA_PROOF, txUrl } from "@/lib/live";
+import { REPO_URL, repoFile, SEPOLIA_EXPLORER, SEPOLIA_PROOF, txUrl } from "@/lib/live";
 
 /** Each problem sits next to the part of WalletDesk that answers it, and the partner stack that part is built on. */
 const pairs = [
@@ -12,13 +12,13 @@ const pairs = [
       icon: TrendingDown,
       tag: "Hurts takers",
       title: "Thin pools, big swaps",
-      body: "A Uniswap v4 pool is only as deep as the capital LPs deposited. A large swap walks the curve and pays heavy price impact.",
+      body: "A large swap walks a shallow curve.",
     },
     fix: {
       icon: Split,
       tag: "Uniswap v4 hook",
       title: "Overflow routing",
-      body: "OverflowHook lets the pool fill a swap up to a cap and fills the rest from the best maker desk in the same transaction, through any v4 router.",
+      body: "The pool fills to a cap. A desk fills the rest, in the same transaction.",
     },
   },
   {
@@ -26,13 +26,13 @@ const pairs = [
       icon: Lock,
       tag: "Hurts makers",
       title: "Inventory sits idle in wallets",
-      body: "Market makers and treasuries hold tokens they would happily quote, but providing liquidity means depositing: custody risk, lockup, and capital split across venues.",
+      body: "Quoting means depositing.",
     },
     fix: {
       icon: Wallet,
       tag: "1inch Aqua + SwapVM",
       title: "Wallet-native liquidity",
-      body: "Makers ship a DeskBand strategy on Aqua: a custom SwapVM instruction that prices a band. Tokens stay in the wallet and move only when a fill pulls them.",
+      body: "The band stays in the wallet. Tokens move only on a fill.",
     },
   },
   {
@@ -40,21 +40,15 @@ const pairs = [
       icon: Clock,
       tag: "Hurts makers",
       title: "Static quotes get picked off",
-      body: "A price posted on chain goes stale the moment the market moves. Arbitrageurs fill it at the old price and the maker pays for it.",
+      body: "A posted price goes stale.",
     },
     fix: {
       icon: ShieldCheck,
       tag: "Chainlink CRE",
       title: "A price guard that can't be gamed in one block",
-      body: "A CRE workflow writes an off-chain reference price. A desk fills only within its maker's limit of both the pool spot and that reference; otherwise the pool takes the whole swap.",
+      body: "A fill has to sit near both the pool and the CRE reference.",
     },
   },
-];
-
-const audiences = [
-  { who: "Takers", what: "Deeper liquidity on large swaps, in one transaction, from the router they already use." },
-  { who: "Makers", what: "Earn a spread on inventory that never leaves their wallet, with a guard against stale fills." },
-  { who: "LPs", what: "Keep earning on the pool leg; the desk only takes what exceeds the pool cap." },
 ];
 
 /** Structural comparison only: each row describes how a system works, not how well. Sources in docs/COMPETITION.md. */
@@ -121,69 +115,52 @@ const judgePath = [
 
 export default function HomePage() {
   return (
-    <div className="flex flex-col gap-16 md:gap-20">
-      {/* Hero */}
-      <section className="grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr]">
-        <div>
-          <p className="mb-4 flex flex-wrap gap-2 text-[12px] font-medium">
-            <span className="inline-flex h-8 items-center rounded-full border border-[#FF007A]/20 bg-[#FF007A]/10 px-3.5 text-[#C2185B] dark:border-[#FF007A]/25 dark:bg-[#FF007A]/15 dark:text-[#FF8CC3]">Uniswap v4</span>
-            <span className="inline-flex h-8 items-center rounded-full border border-desk/20 bg-desk/10 px-3.5 text-desk-ink">1inch Aqua · SwapVM</span>
-            <span className="inline-flex h-8 items-center rounded-full border border-[#375BD2]/20 bg-[#375BD2]/10 px-3.5 text-[#2A44A0] dark:border-[#375BD2]/30 dark:bg-[#375BD2]/20 dark:text-[#B4C3F5]">Chainlink CRE</span>
-          </p>
-          <h1 className="text-[40px] font-semibold tracking-[-0.035em] text-balance md:text-[56px] md:leading-[1.02]">
-            Wallets back Uniswap pools without depositing.
-          </h1>
-          <p className="mt-5 max-w-xl text-[16px] leading-relaxed text-pretty text-body">
-            WalletDesk is a Uniswap v4 hook. When a swap is bigger than the pool should take, the rest fills in the same
-            transaction from a market maker&apos;s wallet through 1inch Aqua, at a price checked by Chainlink CRE.
-          </p>
-          <div className="mt-7 flex flex-wrap items-center gap-3">
-            <Button asChild size="lg">
-              <Link href="/live">See a live fill</Link>
-            </Button>
-            <Button asChild variant="outline" size="lg">
-              <Link href="/how">How it works</Link>
-            </Button>
-            <ExternalLink href={`${SEPOLIA_EXPLORER}/address/${SEPOLIA_DEPLOYMENT.hook}`} className="text-[13px]">
-              Live on Unichain Sepolia
-            </ExternalLink>
-          </div>
+    <div className="flex flex-col gap-28 md:gap-36">
+      {/* Centered first screen: type, one action, then the split. Same rhythm as Mobbin and Details, on the dark canvas. */}
+      <section className="mx-auto flex min-h-[calc(100dvh-8.5rem)] w-full max-w-[720px] flex-col items-center justify-center pt-6 text-center md:pt-10">
+        <p className="mb-6 flex flex-wrap justify-center gap-2 text-[11px] font-medium">
+          <span className="inline-flex h-6 items-center rounded-full bg-[#FF007A]/10 px-2.5 text-[#C2185B] dark:text-[#FF8CC3]">Uniswap v4</span>
+          <span className="inline-flex h-6 items-center rounded-full bg-desk/10 px-2.5 text-desk-ink">1inch Aqua</span>
+          <span className="inline-flex h-6 items-center rounded-full bg-[#375BD2]/10 px-2.5 text-[#2A44A0] dark:text-[#B4C3F5]">Chainlink CRE</span>
+        </p>
+        <h1 className="max-w-[12ch] text-[44px] font-semibold tracking-[-0.045em] text-balance md:text-[68px] md:leading-[0.98]">
+          Wallets back Uniswap pools without depositing.
+        </h1>
+        <p className="mt-5 max-w-sm text-[15px] leading-relaxed text-muted-ink">Large swaps continue after the pool&apos;s cap.</p>
+        <div className="mt-8 flex items-center gap-5">
+          <Button asChild size="lg">
+            <Link href="/live">See a live fill</Link>
+          </Button>
+          <Link href="/how" className="text-[14px] text-muted-ink underline decoration-current/30 underline-offset-4 hover:text-ink">
+            How it works
+          </Link>
         </div>
-        <div className="rounded-[20px] border border-line bg-raised p-5 shadow-[var(--wd-shadow-float)] md:p-6">
-          <p className="text-[13px] font-medium text-muted-ink">One swap of 5 DA, pool cap 1 DA</p>
-          <div className="mt-4">
-            <SplitBar total={5} poolPart={1} symbol="DA" reveal />
-          </div>
-          <ol className="mt-6 space-y-3 text-[14px] leading-relaxed">
-            <li className="flex gap-3">
-              <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-[var(--pool)] text-[12px] text-white">1</span>
-              <span>The pool fills the first <b>1 DA</b>, as any v4 swap would.</span>
+        <figure className="mt-10 w-full max-w-[520px] md:mt-16">
+          <figcaption className="mb-3 text-[13px] text-muted-ink">5 DA in · cap 1</figcaption>
+          <SplitBar total={5} poolPart={1} symbol="DA" reveal />
+          <ol className="mt-6 grid grid-cols-3 gap-4 text-left text-[13px] leading-snug">
+            <li>
+              <span className="mb-1 block font-mono text-[11px] text-[var(--pool)]">01</span>
+              Pool takes its cap
             </li>
-            <li className="flex gap-3">
-              <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-ink text-[12px] text-surface">2</span>
-              <span>The hook checks every maker desk against the pool price and the Chainlink CRE reference, and picks the best quote.</span>
+            <li>
+              <span className="mb-1 block font-mono text-[11px] text-muted-ink">02</span>
+              Best desk is used
             </li>
-            <li className="flex gap-3">
-              <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-desk text-[12px] text-white">3</span>
-              <span>The maker&apos;s wallet fills the other <b>4 DA</b> through Aqua. Same transaction, any router.</span>
+            <li>
+              <span className="mb-1 block font-mono text-[11px] text-desk">03</span>
+              Wallet fills the rest
             </li>
           </ol>
-          <p className="mt-5 text-[13px] text-muted-ink">
-            This exact split ran on Unichain Sepolia:{" "}
-            <ExternalLink href={txUrl(SEPOLIA_EXPLORER, SEPOLIA_PROOF.overflowRouterFill)}>view the transaction</ExternalLink>
+          <p className="mt-5 text-[13px]">
+            <ExternalLink href={txUrl(SEPOLIA_EXPLORER, SEPOLIA_PROOF.overflowRouterFill)}>Transaction</ExternalLink>
           </p>
-        </div>
+        </figure>
       </section>
 
       {/* Problem → fix, row by row */}
       <section className="flex flex-col gap-6" aria-labelledby="problem-heading">
-        <SectionHeading
-          index="01"
-          id="problem-heading"
-          eyebrow="The problem, and the fix"
-          title="On-chain liquidity is either deposited or stale."
-          lead="Each problem is paired with the part of WalletDesk that answers it, and each part is built on one partner's stack."
-        />
+        <SectionHeading index="01" id="problem-heading" eyebrow="The problem" title="Deposited, or stale." />
         <div className="hidden grid-cols-[1fr_2.5rem_1fr] border-b border-line pb-2 font-mono text-[11px] tracking-wider uppercase md:grid">
           <span className="text-problem">The problem</span>
           <span />
@@ -205,13 +182,6 @@ export default function HomePage() {
             </li>
           ))}
         </ul>
-        <div className="grid gap-3 md:grid-cols-3">
-          {audiences.map((a) => (
-            <p key={a.who} className="rounded-[10px] bg-sunken px-4 py-3 text-[13px] leading-relaxed text-body">
-              <b className="text-ink">{a.who}.</b> {a.what}
-            </p>
-          ))}
-        </div>
       </section>
 
       {/* How it compares */}
@@ -220,8 +190,7 @@ export default function HomePage() {
           index="02"
           id="compare-heading"
           eyebrow="How it compares"
-          title="Not another order flow. More liquidity inside the pool you already use."
-          lead="UniswapX and RFQ desks route a swap somewhere else. WalletDesk brings maker liquidity into the Uniswap v4 pool swap itself, so it works alongside them: a filler or a router can still send flow through a WalletDesk pool."
+          title="Inside the pool, not beside it."
         />
         <div className="relative overflow-hidden rounded-[14px] border border-line shadow-[var(--wd-shadow-float)]">
         <div className="overflow-x-auto">
@@ -268,8 +237,7 @@ export default function HomePage() {
         <SectionHeading
           index="03"
           eyebrow="Proof"
-          title="Running on chain, simulated on Chainlink CRE, covered by tests."
-          lead="Every number below links to the transaction, the run log, or the test that backs it."
+          title="On chain, simulated, tested."
         />
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <StatLink value="2 fills" label="real overflow fills on Unichain Sepolia, through our router and Uniswap's PoolSwapTest" href={txUrl(SEPOLIA_EXPLORER, SEPOLIA_PROOF.stockRouterFill)} />
@@ -281,7 +249,7 @@ export default function HomePage() {
 
       {/* Questions */}
       <section className="flex flex-col gap-6" aria-labelledby="questions-heading">
-        <SectionHeading index="04" id="questions-heading" eyebrow="Questions judges ask" title="What can go wrong, and what the hook does about it." />
+        <SectionHeading index="04" id="questions-heading" eyebrow="Questions" title="What the hook does when something fails." />
         <div className="divide-y divide-line border-y border-line">
           {questions.map(({ q, a }) => (
             <details key={q} className="group py-1">

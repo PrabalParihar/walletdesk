@@ -32,7 +32,7 @@ const items: Item[] = [
   { group: "Docs", label: "Source code", hint: "GitHub", href: REPO_URL, external: true },
 ];
 
-export function JumpMenu({ wide = false }: { wide?: boolean }) {
+export function JumpMenu() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -90,18 +90,14 @@ export function JumpMenu({ wide = false }: { wide?: boolean }) {
       <Dialog.Trigger asChild>
         <button
           type="button"
-          className={cn(
-            "wd-spring inline-flex h-8 items-center gap-2 rounded-full border border-line-2 px-2 text-[12px] text-muted-ink hover:bg-hover hover:text-ink md:pr-1.5 md:pl-2.5",
-            wide && "md:h-9 md:w-[340px] md:bg-raised md:px-3 md:text-[13px]",
-          )}
+          className="wd-spring inline-flex h-9 items-center gap-1.5 rounded-full px-2 text-[12px] text-muted-ink hover:bg-hover hover:text-ink"
           aria-label="Jump to a page, contract, transaction or doc"
         >
-          <Search className="size-3.5" aria-hidden />
-          <span className={cn("hidden md:inline", wide && "md:flex-1 md:text-left")}>{wide ? "Search pages, contracts, txs" : "Jump to"}</span>
-          <span className="hidden items-center gap-0.5 md:inline-flex" aria-hidden>
-            <kbd className="rounded border border-line-2 bg-sunken px-1 font-mono text-[10px] leading-4">{kbd}</kbd>
-            <kbd className="rounded border border-line-2 bg-sunken px-1 font-mono text-[10px] leading-4">K</kbd>
-          </span>
+          <Search className="size-4" aria-hidden />
+          <span className="sr-only">Search</span>
+          <kbd className="hidden font-mono text-[11px] text-faint sm:inline" aria-hidden>
+            {kbd} K
+          </kbd>
         </button>
       </Dialog.Trigger>
       <Dialog.Portal>
