@@ -141,6 +141,12 @@ unlocked dev accounts through the fork RPC, so no wallet extension or key import
 node --test services/keeper/scale.test.mjs services/keeper/reference.test.mjs
 ```
 
+**Host the web app on Railway:** the app ships Railway config-as-code in
+[apps/web/railway.json](apps/web/railway.json) (Railpack build, `next start` on `$PORT`, health check on `/`). In Railway,
+create a service from this GitHub repository, set its **Root Directory** to `apps/web`, then **Generate Domain** under
+Networking. No environment variables are needed: Unichain Sepolia is the default, and the link preview uses Railway's
+public domain (or `NEXT_PUBLIC_SITE_URL` if you set one).
+
 **Deploy and CRE simulation:** `DeployUnichainSepolia` / `DeployUnichainMainnet` + `SeedLive` and
 `./services/cre/simulate-sepolia.sh`. Commands and env vars: [SUBMISSION.md](SUBMISSION.md),
 [contracts/.env.example](contracts/.env.example).
