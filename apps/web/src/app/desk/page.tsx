@@ -5,16 +5,14 @@ import { formatUnits, parseUnits } from "viem";
 import { useAccount, useChainId, useConnect, usePublicClient, useSwitchChain, useWriteContract } from "wagmi";
 
 import { Notice } from "@/components/notice";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { aquaAbi, builderAbi, erc20Abi, hookAbi, poolKey, shortError } from "@/lib/contracts";
 import { Amount } from "@/components/amount";
 import { CopyButton } from "@/components/copy-button";
 import { MintTestTokens } from "@/components/mint-test-tokens";
-import { EmptyState, ExternalLink, PageHeader, StatusChip } from "@/components/site";
+import { ExternalLink } from "@/components/site";
 import { TxSteps, useTxSteps } from "@/components/tx-steps";
 import { encodeProgram, formatPriceX18, priceToX18, programHash, quoteExactIn, STORAGE_KEY, type DeskDraft } from "@/lib/desk";
 import { txUrl } from "@/lib/live";
@@ -214,33 +212,20 @@ export default function DeskPage() {
 
   const priceUnit = state.status === "ready" ? `${state.deployment.symbol1} per ${state.deployment.symbol0}` : "token1 per token0";
 
-  return (
-    <div className="flex flex-col gap-6">
-      <PageHeader
-        eyebrow="Maker"
-        title="Make a desk"
-        lead="A price band in your wallet. Tokens move only when a swap fills."
-      >
-        <div className="flex flex-wrap items-center gap-2">
-          {state.status === "ready" ? (
-            <StatusChip tone="brand">
-              {state.deployment.symbol0}/{state.deployment.symbol1} · chain {state.deployment.chainId}
-            </StatusChip>
-          ) : null}
-          <StatusChip tone={isConnected ? "ok" : "neutral"}>{isConnected ? "Wallet connected · you are the maker" : "Wallet not connected"}</StatusChip>
-          {state.status === "ready" ? <MintTestTokens deployment={state.deployment} which="both" amount="1000" /> : null}
-        </div>
-      </PageHeader>
+  const registerUrl = result ? txUrl(state.status === "ready" ? state.deployment.explorer : undefined, result.hash) : undefined;
 
-      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
-        <Card>
-          <CardHeader>
-            <CardTitle>Ship a desk</CardTitle>
-            <p className="text-[13px] leading-relaxed text-muted-ink">
-              Approve Aqua, ship the DeskBand, register it. Nothing moves. Prices are {priceUnit}.
-            </p>
-          </CardHeader>
-          <CardContent className="grid gap-5">
+  return (
+    <div className="mx-auto flex max-w-[840px] flex-col pt-10">
+      <h1 className="text-[40px] font-semibold tracking-tight">Make a desk</h1>
+      <p className="mt-3 max-w-[420px] text-[16px] leading-relaxed text-body">A price band in your wallet. Tokens move only on a fill.</p>
+      <p className="mt-4 font-mono text-[12px] text-muted-ink">
+        {state.status === "ready" ? `${sym0}/${sym1} · ${priceUnit}` : "Prices are token1 per token0"}
+        {state.status === "ready" ? <span className="ml-4"><MintTestTokens deployment={state.deployment} which="both" amount="1000" /></span> : null}
+      </p>
+
+      <div className="mt-10 overflow-hidden rounded-[14px] border border-white/[0.08] bg-raised">
+        <div className="grid lg:grid-cols-[1.15fr_0.85fr]">
+          <div className="grid gap-5 border-b border-white/[0.08] p-6 md:p-8 lg:border-r lg:border-b-0">
             {state.status === "loading" ? <Notice tone="info">Loading the deployment…</Notice> : null}
             {state.status === "missing" ? (
               <Notice tone="info">
@@ -249,113 +234,67 @@ export default function DeskPage() {
               </Notice>
             ) : null}
             {state.status === "error" ? <Notice tone="error">{state.error}</Notice> : null}
-            <fieldset className="grid gap-3">
-              <legend className="mb-1 font-mono text-[11px] tracking-wider text-muted-ink uppercase">Inventory</legend>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <Field label="Shelf amount" hint="Virtual balance on each side. Nothing moves until a fill." value={form.amount} onChange={(value) => set("amount", value)} />
-                <Field label="Max deviation, bps" value={form.maxDeviationBps} onChange={(value) => set("maxDeviationBps", value)} />
-              </div>
-            </fieldset>
-            <fieldset className="grid gap-3">
-              <legend className="mb-1 font-mono text-[11px] tracking-wider text-muted-ink uppercase">Price band</legend>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <Field label="Price low" value={form.priceLow} onChange={(value) => set("priceLow", value)} />
-                <Field label="Price high" value={form.priceHigh} onChange={(value) => set("priceHigh", value)} />
-                <Field label="Fee bps" value={form.feeBps} onChange={(value) => set("feeBps", value)} />
-                <Field label="Decay half life, seconds" hint="0 turns decay off." value={form.halfLife} onChange={(value) => set("halfLife", value)} />
-              </div>
-            </fieldset>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="Shelf, each side" value={form.amount} onChange={(value) => set("amount", value)} />
+              <Field label="Max deviation, bps" value={form.maxDeviationBps} onChange={(value) => set("maxDeviationBps", value)} />
+              <Field label="Price low" value={form.priceLow} onChange={(value) => set("priceLow", value)} />
+              <Field label="Price high" value={form.priceHigh} onChange={(value) => set("priceHigh", value)} />
+              <Field label="Fee, bps" value={form.feeBps} onChange={(value) => set("feeBps", value)} />
+              <Field label="Half life, seconds" hint="0 turns decay off." value={form.halfLife} onChange={(value) => set("halfLife", value)} />
+            </div>
             <TxSteps steps={tx.steps} explorer={state.status === "ready" ? state.deployment.explorer : undefined} />
             {error ? <Notice tone="error">{error}</Notice> : null}
-            <div className="grid gap-2 border-t border-line pt-4">
-              {isConnected ? (
-                <Button type="button" className="h-11 w-full rounded-[10px] sm:w-auto" onClick={() => void ship()} disabled={busy || state.status !== "ready"}>
-                  {busy ? "Shipping…" : "Approve and ship"}
-                </Button>
-              ) : (
-                // A disabled "Connect" button looks clickable and does nothing; this one connects.
-                <Button type="button" className="h-11 w-full rounded-[10px] sm:w-auto" disabled={!injected || connecting} onClick={() => injected && connect({ connector: injected })}>
-                  {injected ? "Connect a wallet to ship" : "No browser wallet found"}
-                </Button>
-              )}
-              {!isConnected && connectError ? (
-                <Notice tone="error">
-                  Could not connect a wallet ({connectError.message.split(".")[0]}). Install a browser wallet on Unichain Sepolia, or run the local
-                  demo with ./script/demo.sh.
-                </Notice>
-              ) : null}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <CardTitle>Quote preview</CardTitle>
-                <p className="mt-1 text-[13px] leading-relaxed text-muted-ink">
-                  What this desk would pay for a {PREVIEW_RESIDUAL} {sym0} overflow, with equal shelves. Same math as the on-chain DeskBand opcode.
-                </p>
-              </div>
-              <StatusChip tone={result ? "ok" : "neutral"}>{result ? "shipped" : "waiting"}</StatusChip>
-            </div>
-          </CardHeader>
-          <CardContent className="grid gap-4 text-[13px]">
-            {preview && !("error" in preview) ? (
-              <div className="rounded-[14px] border border-desk/15 bg-solution px-4 py-4">
-                <p className="text-[12px] font-medium text-muted-ink">Taker receives</p>
-                <p className="mt-1 text-[40px] leading-none font-semibold tracking-[-0.03em] tabular-nums text-ink">
-                  <Amount value={Number(formatUnits(preview.amountOut, d1))} />
-                  <span className="ml-2 text-[18px] font-medium tracking-normal text-body">{sym1}</span>
-                </p>
-              </div>
+            {isConnected ? (
+              <Button type="button" className="h-11 rounded-[10px]" onClick={() => void ship()} disabled={busy || state.status !== "ready"}>
+                {busy ? "Shipping…" : "Approve and ship"}
+              </Button>
             ) : (
-              <EmptyState title={preview && "error" in preview ? "This band does not quote" : "Set a shelf and a band"}>
-                {preview && "error" in preview ? preview.error : "The preview uses the same DeskBand math the opcode will run on chain."}
-              </EmptyState>
+              <Button type="button" className="h-11 rounded-[10px]" disabled={!injected || connecting} onClick={() => injected && connect({ connector: injected })}>
+                {injected ? "Connect a wallet to ship" : "No browser wallet found"}
+              </Button>
+            )}
+            {!isConnected && connectError ? (
+              <Notice tone="error">
+                Could not connect a wallet ({connectError.message.split(".")[0]}). Install a browser wallet on Unichain Sepolia, or run the local demo
+                with ./script/demo.sh.
+              </Notice>
+            ) : null}
+          </div>
+          <div className="grid content-start gap-5 p-6 md:p-8">
+            <p className="font-mono text-[11px] tracking-[0.08em] text-muted-ink uppercase">
+              Quote for {PREVIEW_RESIDUAL} {sym0}
+            </p>
+            {preview && !("error" in preview) ? (
+              <p className="text-[44px] leading-none font-semibold tracking-tight tabular-nums">
+                <Amount value={Number(formatUnits(preview.amountOut, d1))} />
+                <span className="ml-2 text-[16px] font-medium text-muted-ink">{sym1}</span>
+              </p>
+            ) : (
+              <p className="text-[14px] text-muted-ink">{preview && "error" in preview ? preview.error : "Set a shelf and a band."}</p>
             )}
             {preview && !("error" in preview) ? (
-              <div className="grid gap-2">
-                <Row label="Band price now" value={`${formatPriceX18(preview.priceX18, d0, d1)} ${sym1} per ${sym0}`} />
-                <Row label="Your spread (kept in wallet)" value={`${formatPriceX18((preview.feeOut * 10n ** 18n) / 10n ** BigInt(d1), 18, 18, 6)} ${sym1}`} />
-                <p className="text-[12px] leading-relaxed text-muted-ink">
-                  As your {sym1} shelf drains, the price slides toward the low end of the band, so the quote gets worse for takers on the side
-                  you are running out of.
-                </p>
+              <div className="grid gap-2 text-[13px]">
+                <Row label="Price now" value={`${formatPriceX18(preview.priceX18, d0, d1)} ${sym1}`} />
+                <Row label="Spread kept" value={`${formatPriceX18((preview.feeOut * 10n ** 18n) / 10n ** BigInt(d1), 18, 18, 6)} ${sym1}`} />
               </div>
             ) : null}
-            <div className="grid gap-3 border-t border-line pt-4">
-              <div className="flex items-center justify-between">
-                <p className="font-medium text-ink">Program</p>
-                <Badge variant="secondary">{result ? "on Aqua" : "not shipped"}</Badge>
-              </div>
-              <Row label="Wallet movement" value="None on ship" />
-              <Row label="Registry" value={state.status === "ready" ? state.deployment.aqua : "Aqua"} />
+            <div className="grid gap-2 border-t border-white/[0.08] pt-4 text-[13px]">
+              <Row label="On ship" value="Nothing moves" />
               <div>
                 <p className="flex items-center gap-1 text-muted-ink">
-                  Strategy bytes {result ? <CopyButton value={result.strategy} label="strategy bytes" /> : null}
+                  Strategy {result ? <CopyButton value={result.strategy} label="strategy bytes" /> : null}
                 </p>
-                <p className="mt-1 break-all font-mono text-xs">{result?.strategy ?? "Ship to write the order Aqua stores."}</p>
+                <p className="mt-1 break-all font-mono text-[11px] text-ink">{result?.strategy ?? "Ships with the desk."}</p>
               </div>
               <div>
-                <p className="text-muted-ink">Register transaction</p>
-                <p className="mt-1 break-all font-mono text-xs">
-                  {result ? (
-                    txUrl(state.status === "ready" ? state.deployment.explorer : undefined, result.hash) ? (
-                      <ExternalLink href={txUrl(state.status === "ready" ? state.deployment.explorer : undefined, result.hash)}>
-                        {result.hash}
-                      </ExternalLink>
-                    ) : (
-                      result.hash
-                    )
-                  ) : (
-                    "No transaction yet."
-                  )}
+                <p className="text-muted-ink">Register</p>
+                <p className="mt-1 break-all font-mono text-[11px]">
+                  {result ? registerUrl ? <ExternalLink href={registerUrl}>Transaction</ExternalLink> : result.hash : "None yet."}
                 </p>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </div>
   );

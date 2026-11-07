@@ -5,10 +5,7 @@ import { createPublicClient, formatUnits, http } from "viem";
 import { useAccount, useChainId, useConnect, usePublicClient, useSwitchChain, useWriteContract } from "wagmi";
 
 import { Notice } from "@/components/notice";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PageHeader } from "@/components/site";
 import { erc20Abi, shortError, treasuryAbi } from "@/lib/contracts";
 import { addresses } from "@/lib/chains";
 import { useDeployment } from "@/lib/use-deployment";
@@ -112,68 +109,48 @@ export default function FeesPage() {
   const settlementLabel = deployment ? deployment.settlement : "Not deployed";
 
   return (
-    <div className="flex flex-col gap-6">
-      <PageHeader
-        eyebrow="Maker"
-        title="Rebates"
-        lead="USDC paid per attested fill, on top of the spread that stays in the wallet."
-      />
-      <Card>
-        <CardHeader>
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <CardTitle>Maker rebates in USDC</CardTitle>
-            <Badge variant="outline">USDC, 6 decimals on the ERC-20 interface</Badge>
-          </div>
-          <p className="max-w-2xl text-[13px] leading-relaxed text-muted-ink">
-            Circle CCTP V2 can carry that USDC from Unichain Sepolia (domain 10) to Arc testnet (domain 26). The local fork cannot get an
-            Iris attestation, so here the keeper credits the treasury directly and the path is labelled attestor. Claims use the 6-decimal
-            ERC-20 interface at <span className="font-mono">{addresses.arcUsdc}</span> on Arc.
-          </p>
-        </CardHeader>
-        <CardContent className="grid gap-3 md:grid-cols-3">
-          <Stat label="Claimable USDC rebate" value={claimableLabel} numeric={claimable !== null && !loading} />
-          <Stat label="Protocol split" value={splitLabel} numeric={split !== null} />
-          <Stat label="Settlement" value={settlementLabel} detail={loading ? "Reading the keeper…" : keeper || undefined} />
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>Claim</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3 text-[13px] text-muted-ink">
+    <div className="mx-auto flex max-w-[720px] flex-col pt-10">
+      <h1 className="text-[40px] font-semibold tracking-tight">Rebates</h1>
+      <p className="mt-3 max-w-[460px] text-[16px] leading-relaxed text-body">USDC per attested fill, on top of the spread that stays in the wallet.</p>
+      <div className="mt-10 overflow-hidden rounded-[14px] border border-white/[0.08] bg-raised">
+        <div className="grid gap-px bg-white/[0.08] sm:grid-cols-3">
+          <Stat label="Claimable" value={claimableLabel} numeric={claimable !== null && !loading} />
+          <Stat label="Protocol split" value={splitLabel} />
+          <Stat label="Settlement" value={settlementLabel} detail={loading ? "Reading…" : keeper || undefined} />
+        </div>
+        <div className="grid gap-4 p-6 md:p-8">
           {state.status === "missing" ? (
-            <Notice tone="info">The fork treasury appears after ./script/demo.sh. Arc Studio steps are in arc/README.md. There is no Studio URL until you create the project.</Notice>
+            <Notice tone="info">The fork treasury appears after ./script/demo.sh. Arc Studio steps are in arc/README.md.</Notice>
           ) : null}
           {deployment ? (
-            <p>
-              Treasury <span className="font-mono">{claimTreasury ?? "not set"}</span>. USDC balance in the contract{" "}
-              {balance === null ? "…" : formatUnits(balance, 6)}. Showing the connected wallet, or the seeded maker if the wallet is disconnected.
+            <p className="font-mono text-[12px] text-muted-ink">
+              Treasury {claimTreasury ?? "not set"} · balance {balance === null ? "…" : formatUnits(balance, 6)} USDC
             </p>
           ) : null}
           {error ? <Notice tone="error">{error}</Notice> : null}
           {connectError && !isConnected ? <Notice tone="error">Could not connect a wallet ({connectError.message.split(".")[0]}).</Notice> : null}
           {hash ? <Notice tone="ok">Claim mined. {hash}</Notice> : null}
           {isConnected ? (
-            <Button className="h-11 rounded-[10px]" disabled={busy || !deployment} onClick={() => void claim()}>
+            <Button className="h-11 w-fit rounded-[10px]" disabled={busy || !deployment} onClick={() => void claim()}>
               {busy ? "Claiming" : "Claim USDC"}
             </Button>
           ) : (
-            <Button className="h-11 rounded-[10px]" disabled={!injected || connecting} onClick={() => injected && connect({ connector: injected })}>
+            <Button className="h-11 w-fit rounded-[10px]" disabled={!injected || connecting} onClick={() => injected && connect({ connector: injected })}>
               {injected ? "Connect a wallet to claim" : "No browser wallet found"}
             </Button>
           )}
-          <p>
-            Studio paste steps: <span className="font-mono">arc/README.md</span>. Do not send native value to the treasury.
+          <p className="text-[13px] text-muted-ink">
+            CCTP domain 10 to 26. Claims use <span className="font-mono">{addresses.arcUsdc}</span>. See arc/README.md. Do not send native value.
           </p>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }
 
 function Stat({ label, value, detail, numeric = false }: { label: string; value: string; detail?: string; numeric?: boolean }) {
   return (
-    <div className="rounded-[14px] border border-line bg-sunken px-4 py-3">
+    <div className="bg-raised px-5 py-4">
       <p className="text-[12px] text-muted-ink">{label}</p>
       <p className={numeric ? "mt-1 text-[26px] font-semibold tracking-[-0.03em] text-ink tabular-nums" : "mt-1 text-[15px] font-medium text-ink"}>{value}</p>
       {detail ? <p className="mt-1 text-[12px] leading-snug text-muted-ink">{detail}</p> : null}
