@@ -116,8 +116,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
         {children}
       </main>
       <footer className="relative z-10 px-6 pt-8 pb-6 text-center font-mono text-[11px] text-faint">
-        <p>Powered by SwapVM — © Degensoft Ltd 2025</p>
-        <p className="mt-1">Powered by Aqua — © Degensoft Ltd 2025</p>
+        <p>Powered by SwapVM and Aqua — © Degensoft Ltd 2025</p>
       </footer>
     </div>
   );
