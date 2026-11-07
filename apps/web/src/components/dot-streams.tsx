@@ -29,14 +29,14 @@ export function DotStreams({ poolPart, deskPart, symbol }: { poolPart: number; d
   const counts = dotCounts(poolPart, deskPart, TOTAL_DOTS);
   const pool = streamDots(counts.pool, POOL_FROM, POOL_TO, 1);
   const desk = streamDots(counts.desk, DESK_FROM, DESK_TO, 2);
-  const label = { fill: "#8a8a8a", fontSize: 9, fontFamily: "var(--font-mono), ui-monospace, monospace", letterSpacing: "0.08em" } as const;
+  const label = { fill: "#8a8a8a", fontSize: 11, fontFamily: "var(--font-mono), ui-monospace, monospace", letterSpacing: "0.08em" } as const;
 
   return (
     <svg
       viewBox="0 0 300 250"
       role="img"
       aria-label={`Example swap of ${total} ${symbol}: ${poolPart} filled by the Uniswap pool, ${deskPart} from a maker wallet`}
-      className="h-[260px] w-full"
+      className="h-auto max-h-[380px] w-full"
     >
       <text x="20" y="14" aria-hidden="true" {...label}>EXAMPLE SWAP</text>
       <Stream dots={pool} color="var(--pool)" offset={0} />
