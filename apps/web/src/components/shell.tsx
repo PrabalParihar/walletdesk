@@ -44,10 +44,10 @@ export function Shell({ children }: { children: React.ReactNode }) {
       </a>
       <header className="relative z-10 border-b border-line">
         <div className="mx-auto flex h-14 w-full max-w-[1120px] items-center justify-between gap-4 px-5">
-          <Link href="/" className="flex shrink-0 items-center gap-2 text-[14px] font-semibold tracking-tight">
+          <Link href="/" aria-label="WalletDesk home" className="flex shrink-0 items-center gap-2 text-[14px] font-semibold tracking-tight">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/mark.svg" alt="" width={18} height={18} className="size-[18px]" />
-            WalletDesk
+            <span className="hidden sm:inline">WalletDesk</span>
           </Link>
           <div className="flex items-center gap-5">
             <nav className="hidden items-center gap-6 font-mono text-[12px] tracking-[0.08em] text-muted-ink md:flex" aria-label="Browse">

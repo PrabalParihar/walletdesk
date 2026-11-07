@@ -28,7 +28,7 @@ export function ChainSwitcher() {
     <DropdownMenu.Root onOpenChange={(open) => open && setError(null)}>
       <DropdownMenu.Trigger
         className={cn(
-          "flex h-8 shrink-0 items-center gap-1.5 rounded-none border px-3 font-mono text-[11px] tracking-[0.08em] uppercase transition-colors duration-200 motion-reduce:transition-none",
+          "flex h-7 shrink-0 items-center gap-1.5 rounded-none border px-3 font-mono text-[11px] tracking-[0.08em] uppercase transition-colors duration-200 motion-reduce:transition-none",
           wrong
             ? "border-problem/40 bg-problem/10 text-problem hover:bg-problem/15"
             : "border-line-3 text-muted-ink hover:text-ink",
@@ -42,7 +42,7 @@ export function ChainSwitcher() {
         ) : (
           <span className="size-1.5 rounded-full bg-solution" aria-hidden />
         )}
-        <span className="max-w-[5rem] truncate sm:max-w-[9rem]">{wrong ? "Wrong network" : (current?.name ?? "Network")}</span>
+        <span className="hidden max-w-[9rem] truncate sm:inline">{wrong ? "Wrong network" : (current?.name ?? "Network")}</span>
         <ChevronDown className="size-3.5 opacity-70" aria-hidden />
       </DropdownMenu.Trigger>
       <DropdownMenu.Portal>
@@ -51,7 +51,7 @@ export function ChainSwitcher() {
           sideOffset={8}
           className="z-50 w-60 rounded-none border border-line-2 bg-raised p-1.5 text-[13px] text-ink shadow-xl"
         >
-          <DropdownMenu.Label className="px-2.5 pt-1.5 pb-1 text-[11px] text-faint">
+          <DropdownMenu.Label className="px-2.5 pt-1.5 pb-1 text-[11px] text-muted-ink">
             Switch network — added to your wallet if missing
           </DropdownMenu.Label>
           {appChains.map((chain) => {
@@ -68,7 +68,7 @@ export function ChainSwitcher() {
               >
                 <span>
                   {chain.name}
-                  <span className="ml-2 font-mono text-[11px] text-faint">{chain.id}</span>
+                  <span className="ml-2 font-mono text-[11px] text-muted-ink">{chain.id}</span>
                 </span>
                 {pending === chain.id ? (
                   <LoaderCircle className="size-3.5 animate-spin text-muted-ink" aria-hidden />
