@@ -273,7 +273,7 @@ export default function LivePage() {
       <PageHeader
         eyebrow="Taker"
         title="Live overflow"
-        lead="This page reads the deployed contracts directly. The maker's tokens sit in a normal wallet; Aqua only tracks a virtual shelf. Send a swap larger than the pool cap and the hook fills the overflow from that wallet, if the price guard agrees."
+        lead="Send a swap larger than the pool cap."
       >
         <div className="flex flex-wrap items-center gap-2">
           <StatusChip tone={fill ? "ok" : loading ? "neutral" : "warn"}>{fill ? "Last fill on chain" : loading ? "Reading the chain" : "No fill yet"}</StatusChip>
@@ -404,10 +404,7 @@ export default function LivePage() {
         <Card>
           <CardHeader>
             <CardTitle>Overflow fill</CardTitle>
-            <p className="text-[13px] leading-relaxed text-muted-ink">
-              Amounts above the pool cap are filled from the best maker desk. Try both routers: the desk fills Uniswap&apos;s own
-              PoolSwapTest the same way it fills ours.
-            </p>
+            <p className="text-[13px] leading-relaxed text-muted-ink">Above the cap, the best desk fills. Both routers.</p>
           </CardHeader>
           <CardContent className="grid gap-4">
             <div className="grid gap-1.5">

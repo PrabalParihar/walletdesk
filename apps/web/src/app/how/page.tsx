@@ -91,7 +91,7 @@ export default function HowPage() {
           level={1}
           eyebrow="How it works"
           title="One swap, two sources of liquidity, one transaction."
-          lead="The Uniswap pool fills what it should. A maker's wallet fills the overflow through 1inch Aqua. Chainlink CRE keeps the maker's price honest."
+          lead="The pool fills its cap. A wallet fills the rest."
         />
         <figure className="overflow-hidden rounded-[20px] border border-line bg-white shadow-[var(--wd-shadow-float)]">
           {/* eslint-disable-next-line @next/next/no-img-element */}

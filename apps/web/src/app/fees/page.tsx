@@ -116,7 +116,7 @@ export default function FeesPage() {
       <PageHeader
         eyebrow="Maker"
         title="Rebates"
-        lead="The maker's spread on each fill stays in the maker wallet as the output token. On top of that, a protocol-funded rebate program pays USDC per attested fill into FeeShareTreasury."
+        lead="USDC paid per attested fill, on top of the spread that stays in the wallet."
       />
       <Card>
         <CardHeader>
