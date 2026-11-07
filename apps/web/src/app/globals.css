@@ -176,6 +176,31 @@
   }
 }
 
+/* Dot streams: each dot slides in along its stream once, staggered (~1.6s total), then rests. */
+@media (prefers-reduced-motion: no-preference) {
+  .wd-flow {
+    animation: wd-flow 500ms cubic-bezier(0.22, 1, 0.36, 1) calc(var(--i, 0) * 36ms) both;
+  }
+  .wd-flow-node {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: wd-flow-node 500ms ease-out 1100ms both;
+  }
+}
+
+@keyframes wd-flow {
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+}
+
+@keyframes wd-flow-node {
+  50% {
+    transform: scale(1.5);
+  }
+}
+
 /* Faint dot grid that fades out at the top and bottom edges. */
 .wd-grid {
   background-image: radial-gradient(rgba(255, 255, 255, 0.09) 1px, transparent 1px);
