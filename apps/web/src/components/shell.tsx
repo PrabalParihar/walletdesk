@@ -79,7 +79,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
             ))}
             {isConnected ? <ChainSwitcher /> : null}
             {isConnected ? (
-              <button type="button" onClick={() => disconnect()} className={buttonVariants({ size: "sm" })} title={chain?.name ?? "Disconnect"}>
+              <button type="button" onClick={() => disconnect()} className={cn(buttonVariants({ size: "sm" }), "normal-case")} title={chain?.name ?? "Disconnect"}>
                 {address?.slice(0, 6)}…{address?.slice(-4)}
               </button>
             ) : (

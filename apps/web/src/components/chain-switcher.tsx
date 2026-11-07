@@ -40,7 +40,7 @@ export function ChainSwitcher() {
         ) : wrong ? (
           <TriangleAlert className="size-3.5" aria-hidden />
         ) : (
-          <span className="size-1.5 rounded-full bg-solution" aria-hidden />
+          <span className="size-1.5 rounded-full bg-ok" aria-hidden />
         )}
         <span className="hidden max-w-[9rem] truncate sm:inline">{wrong ? "Wrong network" : (current?.name ?? "Network")}</span>
         <ChevronDown className="size-3.5 opacity-70" aria-hidden />
@@ -73,7 +73,7 @@ export function ChainSwitcher() {
                 {pending === chain.id ? (
                   <LoaderCircle className="size-3.5 animate-spin text-muted-ink" aria-hidden />
                 ) : active ? (
-                  <Check className="size-3.5 text-solution" aria-label="Connected" />
+                  <Check className="size-3.5 text-ok" aria-label="Connected" />
                 ) : null}
               </DropdownMenu.Item>
             );

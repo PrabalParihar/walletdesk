@@ -19,3 +19,6 @@ agent-tools/
 
 # Superpowers working state (specs, plans, task reports)
 .superpowers/
+
+# Playwright MCP scratch
+.playwright-mcp/

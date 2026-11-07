@@ -14,7 +14,7 @@ export default function HomePage() {
       <div className="mt-10 flex items-center gap-6">
         <Link
           href="/live"
-          className="inline-flex h-11 items-center gap-2 rounded-[10px] bg-desk px-5 text-[14px] font-medium text-white transition-colors duration-200 hover:bg-[#0050C8] motion-reduce:transition-none"
+          className="inline-flex h-11 items-center gap-2 rounded-[10px] bg-desk px-5 text-[14px] font-medium text-on-fill transition-colors duration-200 hover:bg-desk/85 motion-reduce:transition-none"
         >
           See a live fill
           <ArrowRight className="size-4" aria-hidden />
@@ -36,7 +36,7 @@ export default function HomePage() {
         <div className="p-8">
           <p className="text-[13px] text-muted-ink">One swap of 5 DA</p>
           <div
-            className="mt-5 flex h-14 overflow-hidden rounded-[10px] text-[13px] font-medium text-white tabular-nums"
+            className="mt-5 flex h-14 overflow-hidden rounded-[10px] text-[13px] font-medium text-on-fill tabular-nums"
             role="img"
             aria-label="5 DA in: 1 filled by the Uniswap pool, 4 filled from a maker wallet"
           >
