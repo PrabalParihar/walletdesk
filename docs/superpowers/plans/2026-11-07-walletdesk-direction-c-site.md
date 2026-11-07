@@ -392,6 +392,8 @@ git commit -m "feat(web): Direction C shared components"
 
 - [ ] **Step 1: Each page** opens with `PageHeader`/`SectionHeading` using index markers: `/how` `[ 01 ] HOW IT WORKS`, `/desk` `[ 02 ] MAKE A DESK`, `/live` `[ 03 ] LIVE`, `/fees` `[ 04 ] REBATES`. Replace hand-written buttons and links styled as buttons with `buttonVariants`. Remove leftover radii and white-on-colour text. Keep every handler, state hook, and `aria-*` attribute unchanged.
 
+- [ ] **Step 1b: Rewrite `/how` as the beginner explainer.** Replace the page body with the spec's "How page explains everything" sections 1–5, copy verbatim from the approved mock `.superpowers/brainstorm/25059-1794022488/content/how-story.html`; put the reusable pieces in `apps/web/src/components/how-story.tsx`. Keep the existing source-link data (OverflowHook/DeskBand/desk-guard file+line links) and the "Not audited · Threat model" link from the current page under section 4. The five-step strip is a 5-column hairline grid on desktop and a vertical list at 390px. Step visuals reuse `SplitBar`-style fills (`bg-pool`/`bg-desk`, `text-on-fill`).
+
 - [ ] **Step 2: Architecture diagram.** In `public/architecture.svg` change only fills and strokes: background and boxes to `#000`/`#0A0A0A`, box borders `rgba(255,255,255,0.18)` (highlighted boxes `#3D8BFF`), text `#EDEDED`/`#8A8A8A`, arrows `#8A8A8A`, the "Any v4 router" box `#3D8BFF` with black text. Move the "fill residual" label so it no longer sits on its arrow.
 
 - [ ] **Step 3: Verify**
