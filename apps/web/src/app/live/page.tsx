@@ -3,7 +3,7 @@
 import { ArrowUpRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import { createPublicClient, formatUnits, http, parseUnits } from "viem";
-import { useAccount, useChainId, useConnect, usePublicClient, useSwitchChain, useWriteContract } from "wagmi";
+import { useAccount, useConnect, usePublicClient, useWriteContract } from "wagmi";
 
 import { Notice } from "@/components/notice";
 import { Button } from "@/components/ui/button";
@@ -29,6 +29,7 @@ import { TxSteps, useTxSteps } from "@/components/tx-steps";
 import { formatAmount, formatPriceX18 } from "@/lib/desk";
 import { addressUrl, txUrl } from "@/lib/live";
 import { useDeployment } from "@/lib/use-deployment";
+import { useSwitchNetwork } from "@/lib/use-switch-network";
 
 type Fill = {
   maker: `0x${string}`;
@@ -68,8 +69,7 @@ const MIN_SQRT_PRICE_PLUS_ONE = 4295128740n;
 export default function LivePage() {
   const state = useDeployment();
   const { address, isConnected } = useAccount();
-  const chainId = useChainId();
-  const { switchChainAsync } = useSwitchChain();
+  const { switchTo, walletChainId } = useSwitchNetwork();
   const walletClient = usePublicClient();
   const { writeContractAsync } = useWriteContract();
   const { connect, connectors, isPending: connecting, error: connectError } = useConnect();
@@ -195,9 +195,9 @@ export default function LivePage() {
     setSwapHash(null);
     tx.reset();
     try {
-      if (chainId !== deployment.chainId) {
+      if (walletChainId !== deployment.chainId) {
         tx.start("Switch network");
-        await switchChainAsync({ chainId: deployment.chainId });
+        await switchTo(deployment.chainId);
       }
       const allowance = await walletClient.readContract({
         address: deployment.token0,

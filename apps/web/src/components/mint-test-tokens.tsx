@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { parseUnits } from "viem";
-import { useAccount, useChainId, usePublicClient, useSwitchChain, useWriteContract } from "wagmi";
+import { useAccount, usePublicClient, useWriteContract } from "wagmi";
 
 import { Button } from "@/components/ui/button";
 import { mockTokenAbi, shortError, type Deployment } from "@/lib/contracts";
+import { useSwitchNetwork } from "@/lib/use-switch-network";
 
 /**
  * The demo pool's tokens are public-mint mocks with no value, so a judge can mint some and try the desk themselves.
@@ -21,8 +22,7 @@ export function MintTestTokens({
   amount?: string;
 }) {
   const { address, isConnected } = useAccount();
-  const chainId = useChainId();
-  const { switchChainAsync } = useSwitchChain();
+  const { switchTo, walletChainId } = useSwitchNetwork();
   const client = usePublicClient();
   const { writeContractAsync } = useWriteContract();
   const [state, setState] = useState<{ busy: boolean; note: string | null; error: string | null }>({
@@ -35,7 +35,7 @@ export function MintTestTokens({
     if (!address || !client) return;
     setState({ busy: true, note: null, error: null });
     try {
-      if (chainId !== deployment.chainId) await switchChainAsync({ chainId: deployment.chainId });
+      if (walletChainId !== deployment.chainId) await switchTo(deployment.chainId);
       const targets =
         which === "both"
           ? [

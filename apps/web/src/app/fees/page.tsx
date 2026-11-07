@@ -2,19 +2,19 @@
 
 import { useEffect, useState } from "react";
 import { createPublicClient, formatUnits, http } from "viem";
-import { useAccount, useChainId, useConnect, usePublicClient, useSwitchChain, useWriteContract } from "wagmi";
+import { useAccount, useConnect, usePublicClient, useWriteContract } from "wagmi";
 
 import { Notice } from "@/components/notice";
 import { Button } from "@/components/ui/button";
 import { erc20Abi, shortError, treasuryAbi } from "@/lib/contracts";
 import { addresses } from "@/lib/chains";
 import { useDeployment } from "@/lib/use-deployment";
+import { useSwitchNetwork } from "@/lib/use-switch-network";
 
 export default function FeesPage() {
   const state = useDeployment();
   const { address, isConnected } = useAccount();
-  const chainId = useChainId();
-  const { switchChainAsync } = useSwitchChain();
+  const { switchTo, walletChainId } = useSwitchNetwork();
   const walletClient = usePublicClient();
   const { writeContractAsync } = useWriteContract();
   const { connect, connectors, isPending: connecting, error: connectError } = useConnect();
@@ -86,8 +86,8 @@ export default function FeesPage() {
     setBusy(true);
     setError(null);
     try {
-      if (chainId !== claimChain) {
-        await switchChainAsync({ chainId: claimChain });
+      if (walletChainId !== claimChain) {
+        await switchTo(claimChain);
       }
       const tx = await writeContractAsync({
         address: claimTreasury,

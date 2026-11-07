@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useAccount, useConnect, useDisconnect } from "wagmi";
 import { mock } from "wagmi/connectors";
 
+import { ChainSwitcher } from "@/components/chain-switcher";
 import { networkMode } from "@/lib/chains";
 import { useDeployment } from "@/lib/use-deployment";
 import { cn } from "@/lib/utils";
@@ -82,6 +83,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
               {account.label}
             </button>
           ))}
+          {isConnected ? <ChainSwitcher /> : null}
           {isConnected ? (
             <button type="button" onClick={() => disconnect()} className={connectClass} title={chain?.name ?? "Disconnect"}>
               <span className="font-mono">

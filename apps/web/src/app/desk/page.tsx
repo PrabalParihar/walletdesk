@@ -2,7 +2,7 @@
 
 import { useId, useState } from "react";
 import { formatUnits, parseUnits } from "viem";
-import { useAccount, useChainId, useConnect, usePublicClient, useSwitchChain, useWriteContract } from "wagmi";
+import { useAccount, useConnect, usePublicClient, useWriteContract } from "wagmi";
 
 import { Notice } from "@/components/notice";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ import { TxSteps, useTxSteps } from "@/components/tx-steps";
 import { encodeProgram, formatPriceX18, priceToX18, programHash, quoteExactIn, STORAGE_KEY, type DeskDraft } from "@/lib/desk";
 import { txUrl } from "@/lib/live";
 import { useDeployment } from "@/lib/use-deployment";
+import { useSwitchNetwork } from "@/lib/use-switch-network";
 
 /** Overflow size used for the quote preview: a 5-token swap against a 1-token pool cap leaves 4 for the desk. */
 const PREVIEW_RESIDUAL = "4";
@@ -41,8 +42,7 @@ function safeUnits(value: string, decimals: number): bigint {
 export default function DeskPage() {
   const state = useDeployment();
   const { address, isConnected } = useAccount();
-  const chainId = useChainId();
-  const { switchChainAsync } = useSwitchChain();
+  const { switchTo, walletChainId } = useSwitchNetwork();
   const client = usePublicClient();
   const { writeContractAsync } = useWriteContract();
   const { connect, connectors, isPending: connecting, error: connectError } = useConnect();
@@ -96,9 +96,9 @@ export default function DeskPage() {
     setResult(null);
     tx.reset();
     try {
-      if (chainId !== deployment.chainId) {
+      if (walletChainId !== deployment.chainId) {
         tx.start("Switch network");
-        await switchChainAsync({ chainId: deployment.chainId });
+        await switchTo(deployment.chainId);
       }
       const block = await client.getBlock();
       const start = Number(block.timestamp);

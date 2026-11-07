@@ -23,6 +23,26 @@ const requested = process.env.NEXT_PUBLIC_NETWORK;
 /** Default is the live Unichain Sepolia deployment, so the app works with no local chain. demo.sh sets "fork". */
 export const networkMode: NetworkMode = requested === "fork" || requested === "unichain" ? requested : "sepolia";
 
+/** RPC each chain is read through and offered to wallets that don't know the chain yet. */
+export const rpcUrls: Record<number, string> = {
+  [unichainFork.id]: process.env.NEXT_PUBLIC_RPC_URL || "http://127.0.0.1:8545",
+  [unichainSepolia.id]: process.env.NEXT_PUBLIC_RPC_URL || "https://sepolia.unichain.org",
+  [arcTestnet.id]: process.env.NEXT_PUBLIC_ARC_RPC || "https://rpc.testnet.arc.io",
+};
+if (networkMode === "unichain") rpcUrls[unichain.id] = process.env.NEXT_PUBLIC_RPC_URL || "https://mainnet.unichain.org";
+
+/** Chains this build talks to, in switcher order. */
+export const appChains =
+  networkMode === "unichain"
+    ? ([unichain] as const)
+    : networkMode === "sepolia"
+      ? ([unichainSepolia, arcTestnet] as const)
+      : ([unichainFork] as const);
+
+export type AppChain = (typeof appChains)[number];
+
+export const findAppChain = (id: number | undefined) => appChains.find((chain) => chain.id === id);
+
 export const networkLabel: Record<NetworkMode, string> = {
   fork: "Unichain fork",
   sepolia: "Unichain Sepolia",
