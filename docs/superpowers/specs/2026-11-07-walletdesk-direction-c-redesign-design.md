@@ -81,6 +81,19 @@ Taken from the approved mock (`.superpowers/brainstorm/…/content/directions.ht
      Treasuries & DAOs, New pools, Every v4 chain, one sentence each.
   6. **Closer:** "Liquidity *without* deposits." with `SEE A LIVE FILL` and `MAKE A DESK`.
   No market-size or growth numbers: potential is shown through who can plug in, never through invented figures.
+- **How page explains everything for a beginner (Prabal, 2026-11-07):** one view must make clear what WalletDesk is,
+  how a swap flows, and how it's built, so "a noob can also understand". Approved as the `how-story` mock
+  (`.superpowers/brainstorm/25059-1794022488/content/how-story.html`); sections, copy verbatim from the mock:
+  1. `[ 01 ] HOW IT WORKS`: "A big swap, filled by a pool *and a wallet,* at once." + one-sentence lede, then a five-step
+     strip (You make a big swap → The pool fills what it safely can → The price is checked twice → A maker's wallet fills
+     the rest → You get your tokens), each with a small visual, and an "In one line" summary row.
+  2. `[ 02 ] WHO'S WHO`: "Six parts, *each with one job.*" Six cells: You, Uniswap v4 pool (shop's own shelf), WalletDesk
+     hook (shop assistant), Maker wallet / desk (warehouse out back), 1inch Aqua, Chainlink CRE.
+  3. `[ 03 ] WHAT IF SOMETHING GOES WRONG?`: "Your swap never fails because of WalletDesk." + the four skip/fallback rows.
+  4. `[ 04 ] HOW IT'S BUILT`: three cells (OverflowHook, DeskBand, desk-guard) with source links, then the architecture
+     diagram restyled black, the existing code-link list, and "Not audited · threat model".
+  5. `[ 05 ] WORDS, IN PLAIN ENGLISH`: Hook, Cap, Desk, Price impact, Spread, DA / DB.
+  The step-strip numbers (pool 0.9934, Chainlink 0.9987, 1 / 4 / 5 DA) are labelled illustrative, like the home example.
 - **Labels, numbers, buttons:** monospace, upper case, letter-spaced, with section markers like `[ 01 ] UNISWAP V4 HOOK`.
 - **Buttons:** square corners. Primary: solid off-white with black text. Secondary: 1px outline.
 - **Colour:** black, white, greys. Pink = Uniswap pool leg, blue = maker-wallet leg. No other accent colours (status
