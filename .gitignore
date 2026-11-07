@@ -16,3 +16,9 @@ agent-tools/
 
 # Superdesign working state (init context, website extracts, temp HTML)
 .superdesign/
+
+# Superpowers working state (specs, plans, task reports)
+.superpowers/
+
+# Playwright MCP scratch
+.playwright-mcp/

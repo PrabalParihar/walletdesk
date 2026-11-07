@@ -164,12 +164,12 @@ export function SplitBar({
       <div className={cn("flex h-11 w-full overflow-hidden rounded-[10px] text-[13px] font-medium tabular-nums", reveal && "wd-reveal")} role="img"
         aria-label={`${fmt(total)} ${symbol} in: ${fmt(poolPart)} filled by the Uniswap pool, ${fmt(deskPart)} filled from a maker wallet`}>
         <div
-          className="flex items-center justify-center bg-[var(--pool)] px-2 text-white transition-[width] duration-300 ease-[cubic-bezier(0.3,1.12,0.4,1)] motion-reduce:transition-none"
+          className="flex items-center justify-center bg-[var(--pool)] px-2 text-on-fill transition-[width] duration-300 ease-[cubic-bezier(0.3,1.12,0.4,1)] motion-reduce:transition-none"
           style={{ width: `${poolPct}%`, minWidth: poolPart > 0 ? "3.5rem" : 0 }}
         >
           {poolPart > 0 ? `${fmt(poolPart)} ${symbol}` : null}
         </div>
-        <div className="flex flex-1 items-center justify-center bg-desk px-2 text-white">
+        <div className="flex flex-1 items-center justify-center bg-desk px-2 text-on-fill">
           {deskPart > 0 ? `${fmt(deskPart)} ${symbol}` : "no overflow"}
         </div>
       </div>
@@ -227,7 +227,7 @@ export function FilterChip({ pressed, className, children, ...props }: { pressed
       aria-pressed={pressed}
       className={cn(
         "wd-spring inline-flex h-8 items-center rounded-full px-3.5 text-[13px] font-medium disabled:pointer-events-none disabled:opacity-40",
-        pressed ? "bg-desk text-white shadow-[0_1px_2px_rgba(0,102,250,0.45)]" : "text-body hover:bg-surface hover:text-ink",
+        pressed ? "bg-desk text-on-fill shadow-[0_1px_2px_rgba(61,139,255,0.45)]" : "text-body hover:bg-surface hover:text-ink",
         className,
       )}
       {...props}

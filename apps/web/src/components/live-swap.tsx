@@ -140,7 +140,7 @@ export function SwapProgress({ progress, explorer }: { progress: Progress; explo
               <span
                 className={cn(
                   "relative flex size-6 shrink-0 items-center justify-center rounded-full border text-[11px] font-semibold transition-colors duration-300",
-                  state === "todo" && "border-line-2 text-faint",
+                  state === "todo" && "border-line-2 text-muted-ink",
                   state === "active" && "border-desk bg-desk/15 text-link",
                   lit && "border-transparent bg-[#047857] text-white",
                   state === "error" && "border-transparent bg-[#BE123C] text-white",
@@ -168,7 +168,7 @@ export function SwapProgress({ progress, explorer }: { progress: Progress; explo
             </div>
             <div className="text-[12px] leading-tight">
               <p className={cn(state === "todo" ? "text-muted-ink" : "text-ink", "font-medium")}>{label}</p>
-              <p className={cn("mt-0.5", state === "error" ? "text-problem" : "text-faint")}>
+              <p className={cn("mt-0.5", state === "error" ? "text-problem" : "text-muted-ink")}>
                 {hint}
                 {href ? (
                   <>
