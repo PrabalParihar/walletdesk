@@ -6,7 +6,6 @@ import { createPublicClient, formatUnits, http, parseUnits } from "viem";
 import { useAccount, useChainId, useConnect, usePublicClient, useSwitchChain, useWriteContract } from "wagmi";
 
 import { Notice } from "@/components/notice";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -26,7 +25,7 @@ import {
 import { Amount } from "@/components/amount";
 import { CopyButton } from "@/components/copy-button";
 import { MintTestTokens } from "@/components/mint-test-tokens";
-import { ExternalLink, SplitBar } from "@/components/site";
+import { EmptyState, ExternalLink, FilterChip, PageHeader, SplitBar, StatusChip } from "@/components/site";
 import { TxSteps, useTxSteps } from "@/components/tx-steps";
 import { formatAmount, formatPriceX18 } from "@/lib/desk";
 import { addressUrl, txUrl } from "@/lib/live";
@@ -271,15 +270,23 @@ export default function LivePage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <section className="rounded-[14px] border border-line bg-raised p-5 md:p-6">
-        <h1 className="text-2xl font-semibold tracking-tight md:text-[28px]">Live overflow</h1>
-        <p className="mt-2 max-w-3xl text-[14px] leading-relaxed text-body">
-          This page reads the deployed contracts directly. The maker&apos;s tokens sit in a normal wallet; Aqua only tracks a virtual
-          shelf. Send a swap larger than the pool cap and the hook fills the overflow from that wallet, if the price guard agrees.
-        </p>
+      <PageHeader
+        eyebrow="Taker"
+        title="Live overflow"
+        lead="This page reads the deployed contracts directly. The maker's tokens sit in a normal wallet; Aqua only tracks a virtual shelf. Send a swap larger than the pool cap and the hook fills the overflow from that wallet, if the price guard agrees."
+      >
+        <div className="flex flex-wrap items-center gap-2">
+          <StatusChip tone={fill ? "ok" : loading ? "neutral" : "warn"}>{fill ? "Last fill on chain" : loading ? "Reading the chain" : "No fill yet"}</StatusChip>
+          {deployment?.priceFeed ? (
+            <StatusChip tone={referenceFresh ? "ok" : "warn"}>{referenceFresh ? "CRE reference fresh" : "CRE reference stale"}</StatusChip>
+          ) : (
+            <StatusChip>Spot only</StatusChip>
+          )}
+          {guard ? <StatusChip tone="brand">{guard.deskCount.toString()} desks</StatusChip> : null}
+        </div>
         {deployment ? (
-          <div className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
-            <ul className="divide-y divide-dashed divide-line-2 rounded-[10px] border border-line bg-surface" aria-label="Deployed contracts">
+          <div className="mt-1 flex flex-wrap items-center gap-2">
+            <ul className="flex flex-wrap gap-2" aria-label="Deployed contracts">
               {(
                 [
                   ["OverflowHook", "Uniswap v4 hook", deployment.hook],
@@ -288,20 +295,20 @@ export default function LivePage() {
                 ] as const
               ).map(([name, role, addr]) =>
                 addr ? (
-                  <li key={name} className="flex flex-wrap items-center gap-x-2 gap-y-1 px-3 py-2 text-[13px]">
-                    <span className="font-medium">{name}</span>
-                    <span className="text-muted-ink">· {role}</span>
-                    <span className="ml-auto inline-flex items-center gap-1 font-mono text-[12px] text-body">
-                      <span title={addr}>{`${addr.slice(0, 6)}…${addr.slice(-4)}`}</span>
+                  <li key={name}>
+                    <span className="inline-flex h-8 items-center gap-2 rounded-full border border-line bg-raised px-3 text-[12px]">
+                      <span className="font-medium text-ink">{name}</span>
+                      <span className="sr-only">{role}</span>
+                      <span className="font-mono text-muted-ink" title={addr}>{`${addr.slice(0, 6)}…${addr.slice(-4)}`}</span>
                       <CopyButton value={addr} label={`${name} address`} />
                       {addressUrl(explorer, addr) ? (
                         <a
                           href={addressUrl(explorer, addr)}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex size-6 items-center justify-center rounded-md text-link hover:bg-desk/10"
-                          aria-label={`${name} on the explorer`}
-                          title="Open on the explorer"
+                          className="inline-flex size-6 items-center justify-center rounded-full text-link hover:bg-desk/10"
+                          aria-label={`${name} on the explorer. ${role}`}
+                          title={`${role}. Open on the explorer`}
                         >
                           <ArrowUpRight className="size-3.5" aria-hidden />
                         </a>
@@ -314,192 +321,198 @@ export default function LivePage() {
             <MintTestTokens deployment={deployment} which="token0" />
           </div>
         ) : null}
-      </section>
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-      <div className="grid content-start gap-6">
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>Maker wallet</CardTitle>
-              <Badge className="bg-[#0B6E99] text-white">{balances ? (fill ? "live" : "no fills yet") : loading ? "loading" : "empty"}</Badge>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-3 text-[13px]">
-            {state.status === "missing" ? (
-              <Notice tone="info">Run ./script/demo.sh to fork Unichain, ship a maker, and place an overflow fill on this page.</Notice>
-            ) : null}
-            {state.status === "error" ? <Notice tone="error">{state.error}</Notice> : null}
-            {deployment && balances ? (
-              <div className="overflow-hidden rounded-[10px] border border-line">
-                <table className="w-full text-left">
-                  <thead className="bg-sunken text-muted-ink">
-                    <tr>
-                      <th className="px-3 py-2 font-medium">Side</th>
-                      <th className="px-3 py-2 font-medium">Wallet</th>
-                      <th className="px-3 py-2 font-medium">Virtual (Aqua)</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <BalanceRow symbol={deployment.symbol0} wallet={balances.wallet0} virtual={balances.virtual0} decimals={d0} />
-                    <BalanceRow symbol={deployment.symbol1} wallet={balances.wallet1} virtual={balances.virtual1} decimals={d1} />
-                  </tbody>
-                </table>
+      </PageHeader>
+
+      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)]">
+        <div className="grid content-start gap-5">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between gap-3">
+                <CardTitle>Maker wallet</CardTitle>
+                <StatusChip tone={balances ? (fill ? "ok" : "neutral") : "neutral"}>
+                  {balances ? (fill ? "live" : "no fills yet") : loading ? "loading" : "empty"}
+                </StatusChip>
               </div>
-            ) : deployment && loading ? (
-              <p className="text-muted-ink">Reading the chain…</p>
-            ) : null}
-            {error ? <Notice tone="error">{error}</Notice> : null}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>Price guard</CardTitle>
-              <Badge variant={referenceFresh || !deployment?.priceFeed ? "secondary" : "outline"}>
-                {deployment?.priceFeed ? (referenceFresh ? "CRE reference fresh" : "CRE reference stale") : "spot only"}
-              </Badge>
-            </div>
-            <p className="text-[13px] text-muted-ink">
-              A desk fills only when its quote is within the maker&apos;s limit ({deployment?.maxDeviationBps ?? 100} bps on the seeded desk) of both
-              the pool spot and the Chainlink CRE reference. Otherwise the pool takes the whole swap.
-            </p>
-          </CardHeader>
-          <CardContent className="overflow-hidden rounded-[10px] border border-line p-0 text-[13px]">
-            <table className="w-full">
-              <tbody>
-                <Line label="Pool spot" value={guard ? formatPriceX18(guard.spotX18, d0, d1) : "…"} />
-                <Line
-                  label="CRE reference"
-                  value={
-                    !deployment?.priceFeed
-                      ? "no feed"
-                      : guard?.referenceX18
-                        ? `${formatPriceX18(guard.referenceX18, d0, d1)} · ${humanAge(guard.referenceAge ?? 0)} old, limit ${humanAge(guard.maxReferenceAge)}`
-                        : "none yet"
-                  }
-                />
-                <Line label="Desks on this pool" value={guard ? guard.deskCount.toString() : "…"} />
-                <Line label="Pool cap, input" value={guard ? `${formatAmount(guard.cap, d0)} ${deployment?.symbol0 ?? ""}` : "…"} />
-                <Line label="Last skip" value={lastSkip ? `${skipReasons[lastSkip.reason] ?? lastSkip.reason}` : "none"} />
-              </tbody>
-            </table>
-          </CardContent>
-        </Card>
-      </div>
-      <Card className="shadow-[0_8px_30px_rgba(0,0,0,0.04)]">
-        <CardHeader>
-          <CardTitle>Overflow fill</CardTitle>
-          <p className="text-[13px] text-muted-ink">
-            Amounts above the pool cap are filled from the best maker desk. Try both routers: the desk fills Uniswap&apos;s own
-            PoolSwapTest the same way it fills ours.
-          </p>
-        </CardHeader>
-        <CardContent className="grid gap-4">
-          {fill ? (
-            <SplitBar
-              total={capNumber + Number(formatUnits(fill.residualIn, d0))}
-              poolPart={capNumber}
-              symbol={deployment?.symbol0 ?? ""}
-              caption="How the last overflow swap was split."
-            />
-          ) : null}
-          {fill ? (
-            <div className="overflow-hidden rounded-[10px] border border-line text-[13px]">
+            </CardHeader>
+            <CardContent className="space-y-3 text-[13px]">
+              {state.status === "missing" ? (
+                <Notice tone="info">Run ./script/demo.sh to fork Unichain, ship a maker, and place an overflow fill on this page.</Notice>
+              ) : null}
+              {state.status === "error" ? <Notice tone="error">{state.error}</Notice> : null}
+              {deployment && balances ? (
+                <div className="overflow-hidden rounded-[10px] border border-line">
+                  <table className="w-full text-left">
+                    <thead className="bg-sunken text-[12px] text-muted-ink">
+                      <tr>
+                        <th className="px-3 py-2 font-medium">Side</th>
+                        <th className="px-3 py-2 font-medium">Wallet</th>
+                        <th className="px-3 py-2 font-medium">Virtual (Aqua)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <BalanceRow symbol={deployment.symbol0} wallet={balances.wallet0} virtual={balances.virtual0} decimals={d0} />
+                      <BalanceRow symbol={deployment.symbol1} wallet={balances.wallet1} virtual={balances.virtual1} decimals={d1} />
+                    </tbody>
+                  </table>
+                </div>
+              ) : deployment && loading ? (
+                <div className="grid gap-2" aria-busy="true">
+                  <span className="h-8 animate-pulse rounded-[8px] bg-sunken motion-reduce:animate-none" />
+                  <span className="h-8 animate-pulse rounded-[8px] bg-sunken motion-reduce:animate-none" />
+                  <p className="text-[13px] text-muted-ink">Reading the chain…</p>
+                </div>
+              ) : null}
+              {error ? <Notice tone="error">{error}</Notice> : null}
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between gap-3">
+                <CardTitle>Price guard</CardTitle>
+                <StatusChip tone={!deployment?.priceFeed || referenceFresh ? "ok" : "warn"}>
+                  {deployment?.priceFeed ? (referenceFresh ? "CRE reference fresh" : "CRE reference stale") : "spot only"}
+                </StatusChip>
+              </div>
+              <p className="text-[13px] leading-relaxed text-muted-ink">
+                A desk fills only when its quote is within the maker&apos;s limit ({deployment?.maxDeviationBps ?? 100} bps on the seeded desk) of both
+                the pool spot and the Chainlink CRE reference. Otherwise the pool takes the whole swap.
+              </p>
+            </CardHeader>
+            <CardContent className="overflow-hidden rounded-[10px] border border-line p-0 text-[13px]">
               <table className="w-full">
                 <tbody>
-                  <Line label="Maker" value={fill.maker} copy="maker address" />
-                  <Line label="Residual in" value={`${formatAmount(fill.residualIn, d0, 6)} ${deployment?.symbol0 ?? ""}`} />
-                  <Line label="Shelf out (pulled)" value={`${formatAmount(fill.filledOut, d1, 6)} ${deployment?.symbol1 ?? ""}`} />
-                  <Line label="Maker spread (stays in wallet)" value={`${formatAmount(fill.feeOut, d1, 6)} ${deployment?.symbol1 ?? ""}`} />
-                  <Line label="Fill id" value={fill.fillId} copy="fill id" />
+                  <Line label="Pool spot" value={guard ? formatPriceX18(guard.spotX18, d0, d1) : "…"} />
+                  <Line
+                    label="CRE reference"
+                    value={
+                      !deployment?.priceFeed
+                        ? "no feed"
+                        : guard?.referenceX18
+                          ? `${formatPriceX18(guard.referenceX18, d0, d1)} · ${humanAge(guard.referenceAge ?? 0)} old, limit ${humanAge(guard.maxReferenceAge)}`
+                          : "none yet"
+                    }
+                  />
+                  <Line label="Desks on this pool" value={guard ? guard.deskCount.toString() : "…"} />
+                  <Line label="Pool cap, input" value={guard ? `${formatAmount(guard.cap, d0)} ${deployment?.symbol0 ?? ""}` : "…"} />
+                  <Line label="Last skip" value={lastSkip ? `${skipReasons[lastSkip.reason] ?? lastSkip.reason}` : "none"} />
                 </tbody>
               </table>
-            </div>
-          ) : (
-            <p className="rounded-[10px] border border-dashed border-line-3 bg-sunken px-3 py-6 text-center text-[13px] text-muted-ink">
-              No overflow fill on this pool yet.
+            </CardContent>
+          </Card>
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Overflow fill</CardTitle>
+            <p className="text-[13px] leading-relaxed text-muted-ink">
+              Amounts above the pool cap are filled from the best maker desk. Try both routers: the desk fills Uniswap&apos;s own
+              PoolSwapTest the same way it fills ours.
             </p>
-          )}
-          {keeper[0] ? (
-            <div className="space-y-2 text-[13px]">
-              <p className="text-muted-ink">Keeper: Aqua transfers in the last fill</p>
-              <p className="break-all font-mono text-xs">{keeper[0].txHash}</p>
-              {keeper[0].transfers.map((transfer, index) => (
-                <p key={`${transfer.event}-${index}`}>
-                  {transfer.event} {formatUnits(BigInt(transfer.amount), 18)}
+          </CardHeader>
+          <CardContent className="grid gap-4">
+            <div className="grid gap-1.5">
+              <Label>Router</Label>
+              <div role="group" aria-label="Router" className="inline-flex w-fit flex-wrap gap-1 rounded-full bg-sunken p-1">
+                <FilterChip pressed={route === "overflow"} onClick={() => setRoute("overflow")}>
+                  OverflowRouter
+                </FilterChip>
+                <FilterChip pressed={route === "stock"} disabled={!deployment?.stockRouter} onClick={() => setRoute("stock")}>
+                  Uniswap PoolSwapTest
+                </FilterChip>
+              </div>
+            </div>
+            <div className="grid gap-1.5">
+              <Label htmlFor="swap-size">Swap size, {deployment?.symbol0 ?? "input"} in</Label>
+              <Input id="swap-size" inputMode="decimal" autoComplete="off" value={swapSize} onChange={(event) => setSwapSize(event.target.value)} className="h-12 font-mono text-[18px]" />
+            </div>
+            {plannedSize > 0 && guard ? (
+              <div className="grid gap-2 rounded-[14px] border border-line bg-raised p-3">
+                <p className="text-[12px] font-medium text-muted-ink">How this swap would split</p>
+                <SplitBar total={plannedSize} poolPart={plannedPool} symbol={deployment?.symbol0 ?? ""} />
+                <p className="text-[13px] leading-relaxed text-body">
+                  {plannedDesk > 0 ? (
+                    <>
+                      The pool fills <Amount value={plannedPool} className="font-medium text-ink" /> {deployment?.symbol0}; the best desk that
+                      passes the price guard fills the other <Amount value={plannedDesk} className="font-medium text-ink" /> {deployment?.symbol0}.
+                      If no desk passes, the pool fills it all.
+                    </>
+                  ) : (
+                    <>At or under the pool cap: the pool fills all of it and no desk is asked.</>
+                  )}
                 </p>
-              ))}
-              <p>{keeper[0].credited ? "USDC rebate credited on the treasury." : keeper[0].creditNote || "Rebate pending."}</p>
-            </div>
-          ) : null}
-          <div className="grid gap-1.5">
-            <Label>Router</Label>
-            <div className="flex flex-wrap gap-2">
-              <Button type="button" size="sm" variant={route === "overflow" ? "default" : "outline"} onClick={() => setRoute("overflow")}>
-                OverflowRouter
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant={route === "stock" ? "default" : "outline"}
-                disabled={!deployment?.stockRouter}
-                onClick={() => setRoute("stock")}
-              >
-                Uniswap PoolSwapTest
-              </Button>
-            </div>
-          </div>
-          <div className="grid gap-1.5">
-            <Label htmlFor="swap-size">Swap size, {deployment?.symbol0 ?? "input"} in</Label>
-            <Input id="swap-size" inputMode="decimal" autoComplete="off" value={swapSize} onChange={(event) => setSwapSize(event.target.value)} />
-          </div>
-          {plannedSize > 0 && guard ? (
-            <div className="grid gap-2 rounded-[10px] border border-line p-3">
-              <p className="text-[12px] font-medium text-muted-ink">How this swap would split</p>
-              <SplitBar total={plannedSize} poolPart={plannedPool} symbol={deployment?.symbol0 ?? ""} />
-              <p className="text-[13px] leading-relaxed text-body">
-                {plannedDesk > 0 ? (
-                  <>
-                    The pool fills <Amount value={plannedPool} className="font-medium text-ink" /> {deployment?.symbol0}; the best desk that
-                    passes the price guard fills the other <Amount value={plannedDesk} className="font-medium text-ink" /> {deployment?.symbol0}.
-                    If no desk passes, the pool fills it all.
-                  </>
+              </div>
+            ) : null}
+            <TxSteps steps={tx.steps} explorer={explorer} />
+            {swapError ? <Notice tone="error">{swapError}</Notice> : null}
+            {swapHash ? (
+              <Notice tone="ok">
+                Swap mined.{" "}
+                {txUrl(explorer, swapHash) ? (
+                  <ExternalLink href={txUrl(explorer, swapHash)}>View on the explorer</ExternalLink>
                 ) : (
-                  <>At or under the pool cap: the pool fills all of it and no desk is asked.</>
+                  <span className="font-mono text-xs break-all">{swapHash}</span>
                 )}
-              </p>
-            </div>
-          ) : null}
-          <TxSteps steps={tx.steps} explorer={explorer} />
-          {swapError ? <Notice tone="error">{swapError}</Notice> : null}
-          {swapHash ? (
-            <Notice tone="ok">
-              Swap mined.{" "}
-              {txUrl(explorer, swapHash) ? (
-                <ExternalLink href={txUrl(explorer, swapHash)}>View on the explorer</ExternalLink>
+              </Notice>
+            ) : null}
+            {isConnected ? (
+              <Button type="button" className="h-11 w-full rounded-[10px] sm:w-auto" onClick={() => void runSwap()} disabled={busy || !deployment}>
+                {busy ? "Swapping…" : "Run overflow"}
+              </Button>
+            ) : (
+              // A disabled "Connect" button looks clickable and does nothing; this one connects.
+              <Button type="button" className="h-11 w-full rounded-[10px] sm:w-auto" disabled={!injected || connecting} onClick={() => injected && connect({ connector: injected })}>
+                {injected ? "Connect a wallet to swap" : "No browser wallet found"}
+              </Button>
+            )}
+            {!isConnected && connectError ? (
+              <Notice tone="error">
+                Could not connect a wallet ({connectError.message.split(".")[0]}). Install a browser wallet on Unichain Sepolia, or run the local demo
+                with ./script/demo.sh.
+              </Notice>
+            ) : null}
+
+            <div className="grid gap-3 border-t border-line pt-4">
+              <p className="text-[13px] font-medium text-ink">Last fill on this pool</p>
+              {fill ? (
+                <>
+                  <SplitBar
+                    total={capNumber + Number(formatUnits(fill.residualIn, d0))}
+                    poolPart={capNumber}
+                    symbol={deployment?.symbol0 ?? ""}
+                    caption="How the last overflow swap was split."
+                  />
+                  <div className="overflow-hidden rounded-[10px] border border-line text-[13px]">
+                    <table className="w-full">
+                      <tbody>
+                        <Line label="Maker" value={fill.maker} copy="maker address" />
+                        <Line label="Residual in" value={`${formatAmount(fill.residualIn, d0, 6)} ${deployment?.symbol0 ?? ""}`} />
+                        <Line label="Shelf out (pulled)" value={`${formatAmount(fill.filledOut, d1, 6)} ${deployment?.symbol1 ?? ""}`} />
+                        <Line label="Maker spread (stays in wallet)" value={`${formatAmount(fill.feeOut, d1, 6)} ${deployment?.symbol1 ?? ""}`} />
+                        <Line label="Fill id" value={fill.fillId} copy="fill id" />
+                      </tbody>
+                    </table>
+                  </div>
+                </>
               ) : (
-                <span className="font-mono text-xs break-all">{swapHash}</span>
+                <EmptyState title="No overflow fill on this pool yet">
+                  Send a swap larger than the pool cap. If a desk passes the price guard, its wallet fills the rest in the same transaction.
+                </EmptyState>
               )}
-            </Notice>
-          ) : null}
-          {isConnected ? (
-            <Button type="button" onClick={() => void runSwap()} disabled={busy || !deployment}>
-              {busy ? "Swapping…" : "Run overflow"}
-            </Button>
-          ) : (
-            // A disabled "Connect" button looks clickable and does nothing; this one connects.
-            <Button type="button" variant="outline" disabled={!injected || connecting} onClick={() => injected && connect({ connector: injected })}>
-              {injected ? "Connect a wallet to swap" : "No browser wallet found"}
-            </Button>
-          )}
-          {!isConnected && connectError ? (
-            <Notice tone="error">
-              Could not connect a wallet ({connectError.message.split(".")[0]}). Install a browser wallet on Unichain Sepolia, or run the local demo
-              with ./script/demo.sh.
-            </Notice>
-          ) : null}
-        </CardContent>
-      </Card>
+              {keeper[0] ? (
+                <div className="space-y-2 text-[13px]">
+                  <p className="text-muted-ink">Keeper: Aqua transfers in the last fill</p>
+                  <p className="break-all font-mono text-xs">{keeper[0].txHash}</p>
+                  {keeper[0].transfers.map((transfer, index) => (
+                    <p key={`${transfer.event}-${index}`}>
+                      {transfer.event} {formatUnits(BigInt(transfer.amount), 18)}
+                    </p>
+                  ))}
+                  <p>{keeper[0].credited ? "USDC rebate credited on the treasury." : keeper[0].creditNote || "Rebate pending."}</p>
+                </div>
+              ) : null}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

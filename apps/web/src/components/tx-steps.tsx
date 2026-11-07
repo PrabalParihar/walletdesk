@@ -33,11 +33,12 @@ export function useTxSteps() {
 export function TxSteps({ steps, explorer }: { steps: Step[]; explorer?: string }) {
   if (steps.length === 0) return null;
   return (
-    <ol className="grid gap-1.5 rounded-[10px] border border-line bg-raised p-3 text-[13px]" aria-live="polite" aria-label="Transaction progress">
+    <ol className="grid rounded-[14px] border border-line bg-raised px-3 py-2 text-[13px]" aria-live="polite" aria-label="Transaction progress">
       {steps.map((step, index) => {
         const href = step.hash ? txUrl(explorer, step.hash) : undefined;
         return (
-          <li key={`${step.label}-${index}`} className="flex items-center gap-2.5">
+          <li key={`${step.label}-${index}`} className="grid grid-cols-[1.25rem_minmax(0,1fr)] gap-2.5">
+            <span className="flex flex-col items-center">
             <span
               className={cn(
                 "flex size-5 shrink-0 items-center justify-center rounded-full",
@@ -51,7 +52,10 @@ export function TxSteps({ steps, explorer }: { steps: Step[]; explorer?: string 
               {step.state === "error" ? <X className="size-3" strokeWidth={3} /> : null}
               {step.state === "active" ? <LoaderCircle className="size-4 motion-safe:animate-spin" /> : null}
             </span>
-            <span className={cn("flex-1", step.state === "active" ? "text-ink" : "text-body")}>
+            {index < steps.length - 1 ? <span className="my-0.5 w-px flex-1 bg-line-2" aria-hidden /> : <span className="h-2" />}
+            </span>
+            <span className={cn("flex items-center gap-2 py-1.5", step.state === "active" ? "text-ink" : "text-body")}>
+            <span className="min-w-0 flex-1">
               {step.label}
               {step.state === "active" ? (step.hash ? " · waiting for the block" : " · confirm in your wallet") : null}
               <span className="sr-only">{step.state === "done" ? " (done)" : step.state === "error" ? " (failed)" : " (in progress)"}</span>
@@ -61,6 +65,7 @@ export function TxSteps({ steps, explorer }: { steps: Step[]; explorer?: string 
                 tx
               </ExternalLink>
             ) : null}
+            </span>
           </li>
         );
       })}

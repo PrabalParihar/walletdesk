@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { createPublicClient, formatUnits, http } from "viem";
-import { useAccount, useChainId, usePublicClient, useSwitchChain, useWriteContract } from "wagmi";
+import { useAccount, useChainId, useConnect, usePublicClient, useSwitchChain, useWriteContract } from "wagmi";
 
 import { Notice } from "@/components/notice";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader } from "@/components/site";
 import { erc20Abi, shortError, treasuryAbi } from "@/lib/contracts";
 import { addresses } from "@/lib/chains";
 import { useDeployment } from "@/lib/use-deployment";
@@ -19,6 +20,8 @@ export default function FeesPage() {
   const { switchChainAsync } = useSwitchChain();
   const walletClient = usePublicClient();
   const { writeContractAsync } = useWriteContract();
+  const { connect, connectors, isPending: connecting, error: connectError } = useConnect();
+  const injected = connectors[0];
   const [claimable, setClaimable] = useState<bigint | null>(null);
   const [split, setSplit] = useState<number | null>(null);
   const [balance, setBalance] = useState<bigint | null>(null);
@@ -104,9 +107,17 @@ export default function FeesPage() {
     }
   }
 
+  const claimableLabel = loading ? "Reading…" : claimable === null ? "No treasury yet" : formatUnits(claimable, 6);
+  const splitLabel = split === null ? "0 bps until the owner sets one" : `${split} bps`;
+  const settlementLabel = deployment ? deployment.settlement : "Not deployed";
+
   return (
-    <div className="grid gap-6">
-      <h1 className="text-2xl font-semibold tracking-tight md:text-[28px]">Rebates</h1>
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        eyebrow="Maker"
+        title="Rebates"
+        lead="The maker's spread on each fill stays in the maker wallet as the output token. On top of that, a protocol-funded rebate program pays USDC per attested fill into FeeShareTreasury."
+      />
       <Card>
         <CardHeader>
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -114,19 +125,18 @@ export default function FeesPage() {
             <Badge variant="outline">USDC, 6 decimals on the ERC-20 interface</Badge>
           </div>
           <p className="max-w-2xl text-[13px] leading-relaxed text-muted-ink">
-            The maker&apos;s spread on each fill stays in the maker wallet as the output token. On top of that, a protocol-funded rebate
-            program pays USDC per attested fill into FeeShareTreasury. Circle CCTP V2 can carry that USDC from Unichain Sepolia (domain 10)
-            to Arc testnet (domain 26). The local fork cannot get an Iris attestation, so here the keeper credits the treasury directly and
-            the path is labelled attestor. Claims use the 6-decimal ERC-20 interface at <span className="font-mono">{addresses.arcUsdc}</span> on Arc.
+            Circle CCTP V2 can carry that USDC from Unichain Sepolia (domain 10) to Arc testnet (domain 26). The local fork cannot get an
+            Iris attestation, so here the keeper credits the treasury directly and the path is labelled attestor. Claims use the 6-decimal
+            ERC-20 interface at <span className="font-mono">{addresses.arcUsdc}</span> on Arc.
           </p>
         </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-3">
-          <Stat label="Claimable USDC rebate" value={loading ? "Reading…" : claimable === null ? "No treasury yet" : formatUnits(claimable, 6)} />
-          <Stat label="Protocol split" value={split === null ? "0 bps until the owner sets one" : `${split} bps`} />
-          <Stat label="Settlement" value={deployment ? `${deployment.settlement}. ${keeper || ""}` : "Not deployed"} />
+        <CardContent className="grid gap-3 md:grid-cols-3">
+          <Stat label="Claimable USDC rebate" value={claimableLabel} numeric={claimable !== null && !loading} />
+          <Stat label="Protocol split" value={splitLabel} numeric={split !== null} />
+          <Stat label="Settlement" value={settlementLabel} detail={loading ? "Reading the keeper…" : keeper || undefined} />
         </CardContent>
       </Card>
-      <Card className="bg-sunken shadow-none">
+      <Card>
         <CardHeader>
           <CardTitle>Claim</CardTitle>
         </CardHeader>
@@ -136,15 +146,22 @@ export default function FeesPage() {
           ) : null}
           {deployment ? (
             <p>
-              Treasury <span className="font-mono">{claimTreasury}</span>. USDC balance in the contract{" "}
+              Treasury <span className="font-mono">{claimTreasury ?? "not set"}</span>. USDC balance in the contract{" "}
               {balance === null ? "…" : formatUnits(balance, 6)}. Showing the connected wallet, or the seeded maker if the wallet is disconnected.
             </p>
           ) : null}
           {error ? <Notice tone="error">{error}</Notice> : null}
+          {connectError && !isConnected ? <Notice tone="error">Could not connect a wallet ({connectError.message.split(".")[0]}).</Notice> : null}
           {hash ? <Notice tone="ok">Claim mined. {hash}</Notice> : null}
-          <Button disabled={busy || !isConnected || !deployment} onClick={() => void claim()}>
-            {busy ? "Claiming" : isConnected ? "Claim USDC" : "Connect to claim"}
-          </Button>
+          {isConnected ? (
+            <Button className="h-11 rounded-[10px]" disabled={busy || !deployment} onClick={() => void claim()}>
+              {busy ? "Claiming" : "Claim USDC"}
+            </Button>
+          ) : (
+            <Button className="h-11 rounded-[10px]" disabled={!injected || connecting} onClick={() => injected && connect({ connector: injected })}>
+              {injected ? "Connect a wallet to claim" : "No browser wallet found"}
+            </Button>
+          )}
           <p>
             Studio paste steps: <span className="font-mono">arc/README.md</span>. Do not send native value to the treasury.
           </p>
@@ -154,11 +171,12 @@ export default function FeesPage() {
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function Stat({ label, value, detail, numeric = false }: { label: string; value: string; detail?: string; numeric?: boolean }) {
   return (
-    <div className="rounded-[10px] border border-line bg-surface p-3">
+    <div className="rounded-[14px] border border-line bg-sunken px-4 py-3">
       <p className="text-[12px] text-muted-ink">{label}</p>
-      <p className="mt-1 text-[14px] break-words">{value}</p>
+      <p className={numeric ? "mt-1 text-[26px] font-semibold tracking-[-0.03em] text-ink tabular-nums" : "mt-1 text-[15px] font-medium text-ink"}>{value}</p>
+      {detail ? <p className="mt-1 text-[12px] leading-snug text-muted-ink">{detail}</p> : null}
     </div>
   );
 }

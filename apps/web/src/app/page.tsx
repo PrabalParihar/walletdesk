@@ -126,11 +126,11 @@ export default function HomePage() {
       <section className="grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr]">
         <div>
           <p className="mb-4 flex flex-wrap gap-2 text-[12px] font-medium">
-            <span className="rounded-full bg-[#FF007A]/10 dark:bg-[#FF007A]/15 px-2.5 py-1 text-[#C2185B] dark:text-[#FF8CC3]">Uniswap v4</span>
-            <span className="rounded-full bg-desk/10 px-2.5 py-1 text-desk-ink">1inch Aqua · SwapVM</span>
-            <span className="rounded-full bg-[#375BD2]/10 dark:bg-[#375BD2]/20 px-2.5 py-1 text-[#2A44A0] dark:text-[#B4C3F5]">Chainlink CRE</span>
+            <span className="inline-flex h-8 items-center rounded-full border border-[#FF007A]/20 bg-[#FF007A]/10 px-3.5 text-[#C2185B] dark:border-[#FF007A]/25 dark:bg-[#FF007A]/15 dark:text-[#FF8CC3]">Uniswap v4</span>
+            <span className="inline-flex h-8 items-center rounded-full border border-desk/20 bg-desk/10 px-3.5 text-desk-ink">1inch Aqua · SwapVM</span>
+            <span className="inline-flex h-8 items-center rounded-full border border-[#375BD2]/20 bg-[#375BD2]/10 px-3.5 text-[#2A44A0] dark:border-[#375BD2]/30 dark:bg-[#375BD2]/20 dark:text-[#B4C3F5]">Chainlink CRE</span>
           </p>
-          <h1 className="text-4xl font-semibold tracking-tight text-balance md:text-[52px] md:leading-[1.05]">
+          <h1 className="text-[40px] font-semibold tracking-[-0.035em] text-balance md:text-[56px] md:leading-[1.02]">
             Wallets back Uniswap pools without depositing.
           </h1>
           <p className="mt-5 max-w-xl text-[16px] leading-relaxed text-pretty text-body">
@@ -149,7 +149,7 @@ export default function HomePage() {
             </ExternalLink>
           </div>
         </div>
-        <div className="rounded-[16px] border border-line bg-raised p-5 shadow-[0_8px_30px_rgba(0,0,0,0.04)] md:p-6">
+        <div className="rounded-[20px] border border-line bg-raised p-5 shadow-[var(--wd-shadow-float)] md:p-6">
           <p className="text-[13px] font-medium text-muted-ink">One swap of 5 DA, pool cap 1 DA</p>
           <div className="mt-4">
             <SplitBar total={5} poolPart={1} symbol="DA" reveal />
@@ -184,7 +184,7 @@ export default function HomePage() {
           title="On-chain liquidity is either deposited or stale."
           lead="Each problem is paired with the part of WalletDesk that answers it, and each part is built on one partner's stack."
         />
-        <div className="hidden grid-cols-[1fr_2.5rem_1fr] border-b border-dashed border-line-3 pb-2 font-mono text-[11px] tracking-wider uppercase md:grid">
+        <div className="hidden grid-cols-[1fr_2.5rem_1fr] border-b border-line pb-2 font-mono text-[11px] tracking-wider uppercase md:grid">
           <span className="text-problem">The problem</span>
           <span />
           <span className="text-desk-ink">What WalletDesk does</span>
@@ -223,11 +223,12 @@ export default function HomePage() {
           title="Not another order flow. More liquidity inside the pool you already use."
           lead="UniswapX and RFQ desks route a swap somewhere else. WalletDesk brings maker liquidity into the Uniswap v4 pool swap itself, so it works alongside them: a filler or a router can still send flow through a WalletDesk pool."
         />
-        <div className="overflow-x-auto rounded-[12px] border border-line">
+        <div className="relative overflow-hidden rounded-[14px] border border-line shadow-[var(--wd-shadow-float)]">
+        <div className="overflow-x-auto">
           <table className="w-full min-w-[720px] text-left text-[13px]">
             <caption className="sr-only">How WalletDesk compares with UniswapX, RFQ desks and 1inch Aqua on its own</caption>
             <thead className="bg-raised">
-              <tr className="border-b border-dashed border-line-3">
+              <tr className="border-b border-line">
                 <th scope="col" className="w-[22%] px-4 py-3 font-mono text-[11px] font-normal tracking-wider text-muted-ink uppercase">
                   <span className="sr-only">Question</span>
                 </th>
@@ -254,6 +255,8 @@ export default function HomePage() {
             </tbody>
           </table>
         </div>
+        <span aria-hidden className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-surface to-transparent md:hidden" />
+        </div>
         <p className="text-[13px] text-muted-ink">
           How each system works, from its own documentation; not a ranking. Sources:{" "}
           <ExternalLink href={repoFile("docs/COMPETITION.md")}>docs/COMPETITION.md</ExternalLink>.
@@ -279,16 +282,16 @@ export default function HomePage() {
       {/* Questions */}
       <section className="flex flex-col gap-6" aria-labelledby="questions-heading">
         <SectionHeading index="04" id="questions-heading" eyebrow="Questions judges ask" title="What can go wrong, and what the hook does about it." />
-        <div className="divide-y divide-dashed divide-line-3 border-y border-dashed border-line-3">
+        <div className="divide-y divide-line border-y border-line">
           {questions.map(({ q, a }) => (
             <details key={q} className="group py-1">
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-3 text-[15px] font-medium text-ink [&::-webkit-details-marker]:hidden">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 rounded-[10px] px-2 py-3 text-[15px] font-medium text-ink transition-colors duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] hover:bg-hover motion-reduce:transition-none [&::-webkit-details-marker]:hidden">
                 {q}
-                <span className="font-mono text-[18px] leading-none text-muted-ink transition-transform group-open:rotate-45 motion-reduce:transition-none" aria-hidden>
+                <span className="font-mono text-[18px] leading-none text-muted-ink transition-transform duration-200 ease-[cubic-bezier(0.3,1.12,0.4,1)] group-open:rotate-45 motion-reduce:transition-none" aria-hidden>
                   +
                 </span>
               </summary>
-              <p className="max-w-3xl pb-4 text-[14px] leading-relaxed text-pretty text-body">{a}</p>
+              <p className="max-w-3xl px-2 pb-4 text-[14px] leading-relaxed text-pretty text-body">{a}</p>
             </details>
           ))}
         </div>
@@ -298,7 +301,7 @@ export default function HomePage() {
       </section>
 
       {/* Judge path */}
-      <section className="rounded-[16px] bg-band p-6 text-white md:p-8 dark:border dark:border-line-2" aria-labelledby="judge-heading">
+      <section className="rounded-[24px] bg-band p-6 text-white shadow-[var(--wd-shadow-float)] md:p-8 dark:border dark:border-line-2" aria-labelledby="judge-heading">
         <Eyebrow index="05" className="text-faint [&>span:first-child]:text-band-link">
           For judges
         </Eyebrow>
@@ -307,7 +310,7 @@ export default function HomePage() {
         </h2>
         <ol className="mt-6 grid gap-3 md:grid-cols-3">
           {judgePath.map((step, index) => (
-            <li key={step.title} className="flex flex-col rounded-[12px] border border-white/10 bg-white/[0.04] p-4">
+            <li key={step.title} className="flex flex-col rounded-[14px] border border-white/10 bg-white/[0.04] p-4">
               <span className="flex size-7 items-center justify-center rounded-full bg-surface text-[13px] font-semibold text-ink">
                 {index + 1}
               </span>
