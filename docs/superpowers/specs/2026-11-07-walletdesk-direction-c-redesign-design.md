@@ -61,9 +61,26 @@ Taken from the approved mock (`.superpowers/brainstorm/…/content/directions.ht
   and bottom of the hero. Panels sit one step up from black.
 - **Headlines:** large, tight, regular-weight sans (weight ~500, tracking about -0.04em). Part of a headline may be set in
   grey for rhythm.
-- **Home headline (Prabal's choice):** "One swap. *Two sources of* liquidity." (the middle words in grey). It replaces
-  "Wallets back Uniswap pools without depositing." on the home page, in the OG image, and in the video title scene.
-  Buttons: `SEE A LIVE FILL` → `/live`, `READ HOW IT WORKS` → `/how`.
+- **Home headline (Prabal's choice, revised 2026-11-07):** "Liquidity *without* deposits." (`without` in grey). It
+  replaces "Wallets back Uniswap pools without depositing." on the home page, in the OG image, and in the video title
+  scene. Buttons: `SEE A LIVE FILL` → `/live`, `HOW IT WORKS` → `/how`.
+- **Home tells the story, not just the mechanism (Prabal, 2026-11-07):** judges must see what problem WalletDesk solves
+  and that it can become a big product, without the page getting text-heavy. The home page is five short sections plus a
+  closer, approved as the `home-story` mock:
+  1. **Hero** `[ 01 ] LIQUIDITY LAYER FOR UNISWAP V4`: headline, one sentence ("WalletDesk lets market makers back any
+     Uniswap v4 pool from their own wallets. No deposits. When a swap outgrows the pool, a wallet fills the rest in the
+     same transaction."), the two buttons, the dot streams, the live strip.
+  2. **The problem** `[ 02 ]`: "On-chain liquidity is stuck in *the wrong place.*" Three cells: Pools are thin / Capital
+     sits idle / Quotes go stale, one sentence each.
+  3. **The fix** `[ 03 ]`: "The pool fills what it can. *A wallet fills the rest.*" A before/after pair (Today · pool only:
+     one pink bar; With WalletDesk: 1 pink + 4 blue, "Any v4 router … Never reverts."), then three cells naming the
+     partners: 1inch Aqua (quote from the wallet), Uniswap v4 hook (fill the overflow), Chainlink CRE (guard the price).
+  4. **Proof** `[ 04 ] RUNNING, NOT A MOCK-UP`: four real figures: 31 transactions on Unichain Sepolia, 38 contract tests
+     (hook suite re-run on a mainnet fork), CRE consensus 0.998950 (Coinbase + Kraken), 0 tokens deposited by the maker.
+  5. **Where this goes** `[ 05 ]`: "Every wallet with inventory *becomes liquidity.*" Four cells: Market makers,
+     Treasuries & DAOs, New pools, Every v4 chain, one sentence each.
+  6. **Closer:** "Liquidity *without* deposits." with `SEE A LIVE FILL` and `MAKE A DESK`.
+  No market-size or growth numbers: potential is shown through who can plug in, never through invented figures.
 - **Labels, numbers, buttons:** monospace, upper case, letter-spaced, with section markers like `[ 01 ] UNISWAP V4 HOOK`.
 - **Buttons:** square corners. Primary: solid off-white with black text. Secondary: 1px outline.
 - **Colour:** black, white, greys. Pink = Uniswap pool leg, blue = maker-wallet leg. No other accent colours (status

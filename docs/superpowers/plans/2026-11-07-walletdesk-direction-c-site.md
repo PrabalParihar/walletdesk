@@ -22,8 +22,10 @@ Follow-up plans, written after this one ships: (a) accessibility review + design
 - Labels, numbers and buttons are monospace, upper case, letter-spaced (`tracking-[0.08em]`). Section markers read `[ 01 ]`.
 - Buttons have square corners. Primary: `#EDEDED` fill, black text. Secondary: 1px outline `rgba(255,255,255,0.18)`, `#EDEDED` text.
 - Headlines: weight 500, tracking `-0.04em`.
-- Home headline, exact: `One swap.` / `Two sources of` (grey) / `liquidity.`
-- Home buttons, exact: `SEE A LIVE FILL` → `/live`, `READ HOW IT WORKS` → `/how`.
+- Home headline, exact: `Liquidity ` / `without` (grey) / ` deposits.`
+- Home buttons, exact: `SEE A LIVE FILL` → `/live`, `HOW IT WORKS` → `/how`.
+- Home section copy is fixed by the spec's "Home tells the story" list (sections 1–6); use that text verbatim.
+- `main` gained `chain-switcher.tsx`, `use-switch-network.ts`, `live-swap.tsx` and `.wd-range`/`.wd-pop`/`.wd-celebrate` CSS (commits ab9a493, 067123c). Keep their behaviour; restyle them to Direction C where a task touches them.
 - Nav, exact labels and order: `HOW` → `/how`, `DESK` → `/desk`, `LIVE` → `/live`, `REBATES` → `/fees`.
 - Footer, exact: `Powered by SwapVM and Aqua — © Degensoft Ltd 2025`.
 - Never show an invented number: missing or loading values render `—`.
@@ -211,7 +213,7 @@ git commit -m "feat(web): flat top bar, mono nav, square buttons, one-line foote
 **Files:**
 - Create: `apps/web/src/lib/live-strip.ts`, `apps/web/src/lib/use-live-state.ts`
 - Test: `apps/web/src/lib/live-strip.test.ts`
-- Modify: `apps/web/src/app/live/page.tsx:33-63,79-84,93-175,432-437` (move types, state and the load effect out; import the hook)
+- Modify: `apps/web/src/app/live/page.tsx` (move the `Fill`/`Balances`/`Guard`/`Keeper*` types, the six state hooks and the 8-second load `useEffect` out; import the hook. Line numbers changed after commit 067123c; find them by name)
 
 **Interfaces:**
 - Produces, in `live-strip.ts` (pure, no imports from `@/`): types `Fill`, `KeeperFill`, `KeeperSkip`, `Balances`, `Guard` (moved verbatim from `live/page.tsx`); `humanAge(seconds: number): string` (moved verbatim); `type StripItem = { label: string; value: string }`; `formatStrip(guard: Guard | null, chainLabel: string, formatPrice: (x18: bigint) => string): StripItem[]`.
@@ -336,21 +338,23 @@ git commit -m "feat(web): dot-streams graphic for the home hero"
 - Consumes: `useLiveState`, `formatStrip` (Task 4), `<DotStreams>` (Task 5), `useDeployment` (`@/lib/use-deployment`), `networkLabel`/`networkMode` (`@/lib/chains`), `formatPriceX18` (`@/lib/desk`), `buttonVariants` (Task 3).
 - Produces: `<LiveStrip />` (client component: 4 cells, mono labels, `aria-live="polite"` on the values).
 
-- [ ] **Step 1: Build the hero** inside a `relative` section with `.wd-grid` behind it. Two columns from `md` up (text 1.1fr, graphic 1fr), stacked below `md` with the graphic under the text. Left: eyebrow `[ 01 ] UNISWAP V4 HOOK` (mono 11px, muted), the exact headline as an `<h1>` with `Two sources of` in `text-muted-ink` (size 40px mobile / 64px desktop, weight 500, tracking -0.04em, leading 1.03), the paragraph "Idle wallet inventory backs the pool. Overflow fills from the best Aqua desk, guarded by pool spot and a Chainlink CRE price." (`text-body`, max 34rem), then the two exact buttons (`default` and `outline` variants). Right: `<DotStreams>` showing the repo's example swap: total = `exampleSwap` formatted with `decimals0` (5 DA), `poolPart = 1`, `deskPart = total - 1`. It is a fixed, labelled example and does not change when chain data loads. The strip's CRE cell uses `formatStrip(guard, networkLabel[networkMode], (x) => formatPriceX18(x, decimals0, decimals1))`. Bottom of the hero: `<LiveStrip />`, 4 columns desktop, 2×2 at 390px, `border-t border-line`.
+- [ ] **Step 1: Build the hero** inside a `relative` section with `.wd-grid` behind it. Two columns from `md` up (text 1.1fr, graphic 1fr), stacked below `md` with the graphic under the text. Left: eyebrow `[ 01 ] LIQUIDITY LAYER FOR UNISWAP V4` (mono 11px, muted), the exact headline as an `<h1>` with `without` in `text-muted-ink` (size 44px mobile / 72px desktop, weight 500, tracking -0.045em, leading 1.0), the spec's hero sentence (`text-body`, 16px, max 30rem), then the two exact buttons (`default` and `outline` variants). Right: `<DotStreams>` showing the repo's example swap: total = `exampleSwap` formatted with `decimals0` (5 DA), `poolPart = 1`, `deskPart = total - 1`. It is a fixed, labelled example and does not change when chain data loads. The strip's CRE cell uses `formatStrip(guard, networkLabel[networkMode], (x) => formatPriceX18(x, decimals0, decimals1))`. Bottom of the hero: `<LiveStrip />`, 4 columns desktop, 2×2 at 390px, `border-t border-line`.
 
-- [ ] **Step 2: Verify**
+- [ ] **Step 2: Story sections.** Create `apps/web/src/components/home-story.tsx` exporting `ProblemSection`, `FixSection`, `ProofSection`, `FutureSection`, `Closer` (server components, no data fetching), and render them after the hero in this order. Copy is the spec's sections 2–6, verbatim. Layout per the approved mock `.superpowers/brainstorm/25059-1794022488/content/home-story.html`: each section `border-b border-line`, `py-16 md:py-24`, an `Eyebrow` with `[ 0n ]`, a 34–44px weight-500 heading with the grey half in `text-muted-ink`, then a hairline grid of cells (`grid md:grid-cols-3` / `md:grid-cols-4`, cells divided by `border-line`, single column at 390px). Fix section bars use the same fills as `SplitBar` (`bg-pool`/`bg-desk`, `text-on-fill`). Proof figures are static strings from the spec (no fetching).
 
-Run: `cd apps/web && npm test && npm run build && npm run lint`, then `npm run dev` and check `http://localhost:43127/` at 1366×860 and 390×844 in the Playwright browser.
-Expected: matches card C of the approved mock; strip fills with real Sepolia values within 10 seconds and shows `—` before that; no horizontal scroll at 390; with Chrome DevTools "Emulate CSS prefers-reduced-motion: reduce" the dots render static and complete.
+- [ ] **Step 3: Verify**
 
-- [ ] **Step 3: Commit**
+Run: `cd apps/web && npm test && npm run build && npm run lint`, then `npm run dev` and check `http://localhost:43127/` at 1366×860 and 390×844 in the Playwright browser (full-page screenshots).
+Expected: matches the approved `home-story` mock top to bottom; every heading and figure matches the spec text exactly; strip fills with real Sepolia values within 10 seconds and shows `—` before that; no horizontal scroll at 390; with Chrome DevTools "Emulate CSS prefers-reduced-motion: reduce" the dots render static and complete.
+
+- [ ] **Step 4: Commit**
 
 ```bash
-git add apps/web/src/app/page.tsx apps/web/src/components/live-strip.tsx
-git commit -m "feat(web): Direction C home: new headline, dot streams, live strip"
+git add apps/web/src/app/page.tsx apps/web/src/components/live-strip.tsx apps/web/src/components/home-story.tsx
+git commit -m "feat(web): Direction C home: problem, fix, proof, potential"
 ```
 
-- [ ] **Step 4: Open PR 2 and stop for approval** (title `feat(web): Direction C home (2/3)`, screenshots at 1366 and 390). After merge, confirm the Railway deploy and that the live home strip shows Sepolia numbers.
+- [ ] **Step 5: Open PR 2 and stop for approval** (title `feat(web): Direction C home (2/3)`, screenshots at 1366 and 390). After merge, confirm the Railway deploy and that the live home strip shows Sepolia numbers.
 
 ## PR 3: inner pages and link preview (branch `redesign/3-pages`, from `main` after PR 2 merges)
 
@@ -380,7 +384,7 @@ git commit -m "feat(web): Direction C shared components"
 ### Task 8: Inner pages and the architecture diagram
 
 **Files:**
-- Modify: `apps/web/src/app/how/page.tsx`, `desk/page.tsx`, `live/page.tsx`, `fees/page.tsx` (classes and page headers only; no logic)
+- Modify: `apps/web/src/app/how/page.tsx`, `desk/page.tsx`, `live/page.tsx`, `fees/page.tsx`, `apps/web/src/components/live-swap.tsx` (classes and page headers only; no logic), and the `.wd-range`/`.wd-pop`/`.wd-celebrate` rules in `globals.css` (old blue `rgba(0,102,250,…)` → wallet `rgba(61,139,255,…)`)
 - Modify: `apps/web/public/architecture.svg` (colours only)
 
 **Interfaces:**
