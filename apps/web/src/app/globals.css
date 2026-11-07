@@ -267,8 +267,96 @@
   }
 }
 
+/* Live page: size slider. --fill is the thumb position, --cap marks the pool cap on the track. */
+.wd-range {
+  appearance: none;
+  height: 24px;
+  background: transparent;
+  cursor: pointer;
+}
+.wd-range:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+.wd-range::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 999px;
+  background:
+    linear-gradient(to right, transparent calc(var(--cap) - 1px), var(--wd-ink) calc(var(--cap) - 1px) calc(var(--cap) + 1px), transparent calc(var(--cap) + 1px)),
+    linear-gradient(to right, var(--pool) 0 min(var(--fill), var(--cap)), var(--wd-desk) min(var(--fill), var(--cap)) var(--fill), var(--wd-line-2) var(--fill));
+}
+.wd-range::-moz-range-track {
+  height: 6px;
+  border-radius: 999px;
+  background:
+    linear-gradient(to right, transparent calc(var(--cap) - 1px), var(--wd-ink) calc(var(--cap) - 1px) calc(var(--cap) + 1px), transparent calc(var(--cap) + 1px)),
+    linear-gradient(to right, var(--pool) 0 min(var(--fill), var(--cap)), var(--wd-desk) min(var(--fill), var(--cap)) var(--fill), var(--wd-line-2) var(--fill));
+}
+.wd-range::-webkit-slider-thumb {
+  appearance: none;
+  margin-top: -6px;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: #fff;
+  border: 3px solid var(--wd-desk);
+  box-shadow: 0 1px 6px rgba(0, 102, 250, 0.5);
+}
+.wd-range::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: #fff;
+  border: 3px solid var(--wd-desk);
+  box-shadow: 0 1px 6px rgba(0, 102, 250, 0.5);
+}
+.wd-range:focus-visible {
+  outline: none;
+}
+.wd-range:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 4px rgba(0, 102, 250, 0.35);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .wd-pop {
+    animation: wd-pop 320ms cubic-bezier(0.3, 1.4, 0.5, 1) both;
+  }
+  .wd-celebrate {
+    animation: wd-celebrate 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+}
+
+@keyframes wd-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes wd-celebrate {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+    box-shadow: 0 0 0 0 rgba(0, 102, 250, 0.5);
+  }
+  60% {
+    opacity: 1;
+    transform: none;
+    box-shadow: 0 0 0 10px rgba(0, 102, 250, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(0, 102, 250, 0);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .wd-reveal,
+  .wd-pop,
+  .wd-celebrate,
   .wd-spring,
   .wd-lift {
     animation: none !important;

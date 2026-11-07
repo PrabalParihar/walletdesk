@@ -7,8 +7,6 @@ import { useAccount, useConnect, usePublicClient, useWriteContract } from "wagmi
 
 import { Notice } from "@/components/notice";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   aquaAbi,
@@ -24,10 +22,21 @@ import {
 } from "@/lib/contracts";
 import { CopyButton } from "@/components/copy-button";
 import { MintTestTokens } from "@/components/mint-test-tokens";
-import { ExternalLink, FilterChip, SplitBar } from "@/components/site";
-import { TxSteps, useTxSteps } from "@/components/tx-steps";
+import { FilterChip, SplitBar } from "@/components/site";
+import {
+  FillResult,
+  idleProgress,
+  progressLabel,
+  readSwapResult,
+  SizePicker,
+  SwapProgress,
+  type PhaseKey,
+  type PhaseState,
+  type Progress,
+  type SwapResult,
+} from "@/components/live-swap";
 import { formatAmount, formatPriceX18 } from "@/lib/desk";
-import { addressUrl, txUrl } from "@/lib/live";
+import { addressUrl } from "@/lib/live";
 import { useDeployment } from "@/lib/use-deployment";
 import { useSwitchNetwork } from "@/lib/use-switch-network";
 
@@ -85,8 +94,8 @@ export default function LivePage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [swapError, setSwapError] = useState<string | null>(null);
-  const tx = useTxSteps();
-  const [swapHash, setSwapHash] = useState<string | null>(null);
+  const [progress, setProgress] = useState<Progress>(idleProgress);
+  const [result, setResult] = useState<SwapResult | null>(null);
 
   const deployment = state.status === "ready" ? state.deployment : null;
 
@@ -192,12 +201,20 @@ export default function LivePage() {
     const spender = route === "stock" && deployment.stockRouter ? deployment.stockRouter : deployment.overflowRouter;
     setBusy(true);
     setSwapError(null);
-    setSwapHash(null);
-    tx.reset();
+    setResult(null);
+    setProgress(idleProgress());
+    let current: PhaseKey = "network";
+    const mark = (key: PhaseKey, state: PhaseState, hash?: `0x${string}`) => {
+      if (state === "active") current = key;
+      setProgress((prev) => ({ ...prev, [key]: { state, hash: hash ?? prev[key].hash } }));
+    };
     try {
       if (walletChainId !== deployment.chainId) {
-        tx.start("Switch network");
+        mark("network", "active");
         await switchTo(deployment.chainId);
+        mark("network", "done");
+      } else {
+        mark("network", "skipped");
       }
       const allowance = await walletClient.readContract({
         address: deployment.token0,
@@ -206,7 +223,7 @@ export default function LivePage() {
         args: [address, spender],
       });
       if (allowance < amount) {
-        tx.start(`Approve ${deployment.symbol0} for the router`);
+        mark("approve", "active");
         const hash = await writeContractAsync({
           address: deployment.token0,
           abi: erc20Abi,
@@ -214,12 +231,15 @@ export default function LivePage() {
           args: [spender, amount],
           chainId: deployment.chainId,
         });
-        tx.sent(hash);
+        mark("approve", "active", hash);
         await walletClient.waitForTransactionReceipt({ hash });
+        mark("approve", "done");
+      } else {
+        mark("approve", "skipped");
       }
+      mark("swap", "active");
       let hash: `0x${string}`;
       if (route === "stock" && deployment.stockRouter) {
-        tx.start("Swap through Uniswap's PoolSwapTest router");
         hash = await writeContractAsync({
           address: deployment.stockRouter,
           abi: stockRouterAbi,
@@ -233,7 +253,6 @@ export default function LivePage() {
           chainId: deployment.chainId,
         });
       } else {
-        tx.start("Swap through OverflowRouter");
         hash = await writeContractAsync({
           address: deployment.overflowRouter,
           abi: routerAbi,
@@ -242,12 +261,14 @@ export default function LivePage() {
           chainId: deployment.chainId,
         });
       }
-      tx.sent(hash);
-      await walletClient.waitForTransactionReceipt({ hash });
-      tx.finish();
-      setSwapHash(hash);
+      mark("swap", "done", hash);
+      mark("mined", "active");
+      const receipt = await walletClient.waitForTransactionReceipt({ hash });
+      if (receipt.status !== "success") throw new Error("The swap reverted on chain.");
+      mark("mined", "done");
+      setResult(readSwapResult(receipt, deployment.hook, amount, deployment.decimals0, deployment.decimals1));
     } catch (caught) {
-      tx.fail();
+      mark(current, "error");
       setSwapError(shortError(caught));
     } finally {
       setBusy(false);
@@ -262,10 +283,7 @@ export default function LivePage() {
 
   const explorer = deployment?.explorer;
   const capNumber = guard ? Number(formatUnits(guard.cap, d0)) : 1;
-  const sizeNumber = Number(swapSize.trim());
-  const plannedSize = Number.isFinite(sizeNumber) && sizeNumber > 0 ? sizeNumber : 0;
-  const plannedPool = Math.min(plannedSize, capNumber);
-  const plannedDesk = Math.max(plannedSize - capNumber, 0);
+  const started = Object.values(progress).some((phase) => phase.state !== "todo");
 
   const guardNote = !deployment?.priceFeed ? "Spot only" : referenceFresh ? "CRE fresh" : "CRE stale";
 
@@ -295,21 +313,27 @@ export default function LivePage() {
               </FilterChip>
             </div>
           </div>
-          <div className="grid gap-1.5">
-            <Label htmlFor="swap-size">Size, {deployment?.symbol0 ?? "input"} in</Label>
-            <Input id="swap-size" inputMode="decimal" autoComplete="off" value={swapSize} onChange={(event) => setSwapSize(event.target.value)} className="h-12 font-mono text-[18px]" />
-          </div>
-          {plannedSize > 0 && guard ? <SplitBar total={plannedSize} poolPart={plannedPool} symbol={deployment?.symbol0 ?? ""} /> : null}
-          <TxSteps steps={tx.steps} explorer={explorer} />
+          <SizePicker
+            value={swapSize}
+            onChange={(next) => {
+              setSwapSize(next);
+              if (!busy && result) {
+                setResult(null);
+                setProgress(idleProgress());
+              }
+            }}
+            cap={guard ? capNumber : null}
+            symbol={deployment?.symbol0 ?? ""}
+            disabled={busy}
+          />
+          {started ? <SwapProgress progress={progress} explorer={explorer} /> : null}
           {swapError ? <Notice tone="error">{swapError}</Notice> : null}
-          {swapHash ? (
-            <Notice tone="ok">
-              Swap mined. {txUrl(explorer, swapHash) ? <ExternalLink href={txUrl(explorer, swapHash)}>View on the explorer</ExternalLink> : <span className="font-mono text-xs break-all">{swapHash}</span>}
-            </Notice>
+          {result && deployment ? (
+            <FillResult result={result} symbol0={deployment.symbol0} symbol1={deployment.symbol1} explorer={explorer} />
           ) : null}
           {isConnected ? (
-            <Button type="button" className="h-11 rounded-[10px]" onClick={() => void runSwap()} disabled={busy || !deployment}>
-              {busy ? "Swapping…" : "Run overflow"}
+            <Button type="button" className="wd-spring h-12 rounded-[10px] text-[15px]" onClick={() => void runSwap()} disabled={busy || !deployment}>
+              {progressLabel(progress, busy, swapSize, deployment?.symbol0 ?? "")}
             </Button>
           ) : (
             <Button type="button" className="h-11 rounded-[10px]" disabled={!injected || connecting} onClick={() => injected && connect({ connector: injected })}>
